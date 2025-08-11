@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Data.SqlClient;
 using ProjectControlsReportingTool.API.Data;
 using ProjectControlsReportingTool.API.Models.Entities;
 using ProjectControlsReportingTool.API.Models.Enums;
@@ -17,7 +18,8 @@ namespace ProjectControlsReportingTool.API.Repositories.Implementations
 
         public async Task<User?> GetByEmailAsync(string email)
         {
-            return await _dbSet.FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower());
+            return await _context.Set<User>()
+                .FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower());
         }
 
         public async Task<User?> AuthenticateAsync(string email, string password)
@@ -32,40 +34,70 @@ namespace ProjectControlsReportingTool.API.Repositories.Implementations
             return null;
         }
 
-        public async Task<IEnumerable<User>> GetByDepartmentAsync(Department department)
+        public async Task<User?> AuthenticateUserAsync(string email, string passwordHash)
         {
-            return await _dbSet
-                .Where(u => u.Department == department && u.IsActive)
-                .OrderBy(u => u.FirstName)
-                .ToListAsync();
+            return await _context.Set<User>()
+                .FirstOrDefaultAsync(u => u.Email == email && u.PasswordHash == passwordHash && u.IsActive);
         }
 
-        public async Task<IEnumerable<User>> GetByRoleAsync(UserRole role)
+        public async Task<IEnumerable<User>> GetUsersByRoleAsync(UserRole role)
         {
-            return await _dbSet
+            return await _context.Set<User>()
                 .Where(u => u.Role == role && u.IsActive)
-                .OrderBy(u => u.FirstName)
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<User>> GetLineManagersAsync()
+        public async Task<IEnumerable<User>> GetUsersByDepartmentAsync(Department department)
         {
-            return await GetByRoleAsync(UserRole.LineManager);
+            return await _context.Set<User>()
+                .Where(u => u.Department == department && u.IsActive)
+                .ToListAsync();
         }
 
-        public async Task<IEnumerable<User>> GetExecutivesAsync()
+        public async Task<IEnumerable<User>> GetActiveUsersAsync()
         {
-            return await GetByRoleAsync(UserRole.Executive);
+            return await _context.Set<User>()
+                .Where(u => u.IsActive)
+                .ToListAsync();
         }
 
         public async Task<bool> EmailExistsAsync(string email)
         {
-            return await _dbSet.AnyAsync(u => u.Email.ToLower() == email.ToLower());
+            return await _context.Set<User>()
+                .AnyAsync(u => u.Email.ToLower() == email.ToLower());
         }
 
-        public async Task<bool> ValidatePasswordAsync(User user, string password)
+        public async Task<User> CreateUserAsync(User user)
         {
-            return VerifyPassword(password, user.PasswordHash, user.PasswordSalt);
+            user.CreatedDate = DateTime.UtcNow;
+            user.IsActive = true;
+            await AddAsync(user);
+            return user;
+        }
+
+        public async Task<User> CreateUserAsync(User user, string password)
+        {
+            var (hash, salt) = HashPassword(password);
+            user.PasswordHash = hash;
+            user.PasswordSalt = salt;
+            user.CreatedDate = DateTime.UtcNow;
+            user.IsActive = true;
+
+            await AddAsync(user);
+            return user;
+        }
+
+        public async Task<bool> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword)
+        {
+            var user = await GetByIdAsync(userId);
+            if (user == null || !VerifyPassword(currentPassword, user.PasswordHash, user.PasswordSalt))
+                return false;
+
+            var (hash, salt) = HashPassword(newPassword);
+            user.PasswordHash = hash;
+            user.PasswordSalt = salt;
+            await UpdateAsync(user);
+            return true;
         }
 
         public async Task UpdateLastLoginAsync(Guid userId)
@@ -78,25 +110,61 @@ namespace ProjectControlsReportingTool.API.Repositories.Implementations
             }
         }
 
-        public async Task<User> CreateUserAsync(User user, string password)
+        public async Task<bool> UpdateUserRoleAsync(Guid userId, UserRole newRole)
         {
-            // Hash password
-            var (hash, salt) = HashPassword(password);
-            user.PasswordHash = hash;
-            user.PasswordSalt = salt;
-            user.CreatedDate = DateTime.UtcNow;
-            user.IsActive = true;
-
-            return await AddAsync(user);
+            var user = await GetByIdAsync(userId);
+            if (user != null)
+            {
+                user.Role = newRole;
+                await UpdateAsync(user);
+                return true;
+            }
+            return false;
         }
 
-        public async Task<bool> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword)
+        public async Task<bool> DeactivateUserAsync(Guid userId)
+        {
+            var user = await GetByIdAsync(userId);
+            if (user != null)
+            {
+                user.IsActive = false;
+                await UpdateAsync(user);
+                return true;
+            }
+            return false;
+        }
+
+        public async Task<bool> ReactivateUserAsync(Guid userId)
+        {
+            var user = await GetByIdAsync(userId);
+            if (user != null)
+            {
+                user.IsActive = true;
+                await UpdateAsync(user);
+                return true;
+            }
+            return false;
+        }
+
+        // Note: GetUsersByManagerAsync removed as User entity doesn't have ManagerId property
+        
+        public async Task<int> GetUserCountByDepartmentAsync(Department department)
+        {
+            return await _context.Set<User>()
+                .CountAsync(u => u.Department == department && u.IsActive);
+        }
+
+        public async Task<User?> GetUserWithReportsAsync(Guid userId)
+        {
+            return await _context.Set<User>()
+                .Include(u => u.CreatedReports)
+                .FirstOrDefaultAsync(u => u.Id == userId);
+        }
+
+        public async Task<bool> ResetPasswordAsync(Guid userId, string newPassword)
         {
             var user = await GetByIdAsync(userId);
             if (user == null)
-                return false;
-
-            if (!VerifyPassword(currentPassword, user.PasswordHash, user.PasswordSalt))
                 return false;
 
             var (hash, salt) = HashPassword(newPassword);

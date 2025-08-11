@@ -3,21 +3,6 @@ using ProjectControlsReportingTool.API.Models.Enums;
 
 namespace ProjectControlsReportingTool.API.Repositories.Interfaces
 {
-    public interface IUserRepository : IBaseRepository<User>
-    {
-        Task<User?> GetByEmailAsync(string email);
-        Task<User?> AuthenticateAsync(string email, string password);
-        Task<IEnumerable<User>> GetByDepartmentAsync(Department department);
-        Task<IEnumerable<User>> GetByRoleAsync(UserRole role);
-        Task<IEnumerable<User>> GetLineManagersAsync();
-        Task<IEnumerable<User>> GetExecutivesAsync();
-        Task<bool> EmailExistsAsync(string email);
-        Task<bool> ValidatePasswordAsync(User user, string password);
-        Task UpdateLastLoginAsync(Guid userId);
-        Task<User> CreateUserAsync(User user, string password);
-        Task<bool> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword);
-    }
-
     public interface IReportRepository : IBaseRepository<Report>
     {
         Task<IEnumerable<Report>> GetByCreatorAsync(Guid creatorId);

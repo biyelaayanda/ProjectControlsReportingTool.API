@@ -24,7 +24,7 @@ void SetupDependencyInjection(WebApplicationBuilder webApplicationBuilder)
     webApplicationBuilder.Services.AddScoped(typeof(IBaseRepository<>), typeof(BaseRepository<>));
     
     // Specific repositories
-    webApplicationBuilder.Services.AddScoped<IUserRepository, UserRepository>();
+    webApplicationBuilder.Services.AddScoped<IUserRepository, ProjectControlsReportingTool.API.Repositories.Implementations.UserRepository>();
     webApplicationBuilder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
     // webApplicationBuilder.Services.AddScoped<IReportRepository, ReportRepository>();
     // webApplicationBuilder.Services.AddScoped<IReportSignatureRepository, ReportSignatureRepository>();
