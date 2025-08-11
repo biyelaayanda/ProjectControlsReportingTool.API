@@ -1,0 +1,6 @@
+@ProjectControlsReportingTool.API_HostAddress = http://localhost:5039
+
+GET {{ProjectControlsReportingTool.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
