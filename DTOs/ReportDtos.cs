@@ -38,6 +38,9 @@ namespace ProjectControlsReportingTool.API.DTOs
         public Guid Id { get; set; }
         public string Title { get; set; } = string.Empty;
         public string? Description { get; set; }
+        public string? Type { get; set; }
+        public string Priority { get; set; } = "Medium";
+        public DateTime? DueDate { get; set; }
         public ReportStatus Status { get; set; }
         public string StatusName { get; set; } = string.Empty;
         public Guid CreatedBy { get; set; }

@@ -39,7 +39,10 @@ namespace ProjectControlsReportingTool.API.Controllers
             var userDepartment = GetCurrentUserDepartment();
             
             var reports = await _reportService.GetReportsAsync(filter, userId, userRole, userDepartment);
-            return Ok(reports);
+            
+            // Wrap response to match frontend expectations
+            var response = new { reports = reports };
+            return Ok(response);
         }
 
         [HttpGet("{id}")]

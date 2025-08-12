@@ -428,5 +428,13 @@ namespace ProjectControlsReportingTool.API.Repositories.Implementations
                 .FromSqlRaw("EXEC SearchReports @SearchTerm, @Department, @Status, @FromDate, @ToDate, @Page, @PageSize", parameters)
                 .ToListAsync();
         }
+
+        // Override GetAllAsync to include Creator navigation property
+        public override async Task<IEnumerable<Report>> GetAllAsync()
+        {
+            return await _dbSet
+                .Include(r => r.Creator)
+                .ToListAsync();
+        }
     }
 }
