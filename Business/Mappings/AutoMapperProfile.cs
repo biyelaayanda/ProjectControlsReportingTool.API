@@ -36,9 +36,7 @@ namespace ProjectControlsReportingTool.API.Business.Mappings
             CreateMap<Report, ReportSummaryDto>()
                 .ForMember(dest => dest.CreatorName, opt => opt.MapFrom(src => $"{src.Creator.FirstName} {src.Creator.LastName}"))
                 .ForMember(dest => dest.StatusName, opt => opt.MapFrom(src => src.Status.ToString()))
-                .ForMember(dest => dest.DepartmentName, opt => opt.MapFrom(src => GetDepartmentName(src.Department)))
-                .ForMember(dest => dest.CanBeEdited, opt => opt.MapFrom(src => src.Status == ReportStatus.Draft))
-                .ForMember(dest => dest.AttachmentCount, opt => opt.MapFrom(src => src.Attachments.Count(a => a.IsActive)));
+                .ForMember(dest => dest.DepartmentName, opt => opt.MapFrom(src => GetDepartmentName(src.Department)));
 
             CreateMap<Report, ReportDetailDto>()
                 .IncludeBase<Report, ReportDto>();

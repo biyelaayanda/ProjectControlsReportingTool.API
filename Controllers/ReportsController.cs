@@ -87,6 +87,20 @@ namespace ProjectControlsReportingTool.API.Controllers
             return Ok(result);
         }
 
+        [HttpPost("{id}/submit")]
+        public async Task<IActionResult> SubmitReport(Guid id, [FromBody] SubmitReportDto dto)
+        {
+            var userId = GetCurrentUserId();
+            var userRole = GetCurrentUserRole();
+            
+            var result = await _reportService.SubmitReportAsync(id, dto, userId, userRole);
+            
+            if (!result.Success)
+                return BadRequest(result.ErrorMessage);
+                
+            return Ok(result);
+        }
+
         [HttpPost("{id}/reject")]
         public async Task<IActionResult> RejectReport(Guid id, [FromBody] RejectionDto dto)
         {
