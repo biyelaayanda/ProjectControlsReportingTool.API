@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "LqfeU3XGvYbWmGEwQJB01/XJhX4c8FKmAxgi1dVp4DfKp0Wcuhq9e6fYwwUDVDNo6tlP6Zp3fFqm61nonP1qog==",
+  "dgSpecHash": "vMBHnrK3POFe6xn6O14kS6Gp1X0eQS8GF23UZFSRCpXsA1s9Esk/3x9p6wvmeQ/Z+RpadqUjAAvGdyzZwXMtTw==",
   "success": true,
-  "projectFilePath": "C:\\Users\\biyel\\source\\repos\\Side projects\\ProjectControlsReportingTool\\ProjectControlsReportingTool.API\\ProjectControlsReportingTool.API.csproj",
+  "projectFilePath": "C:\\Users\\biyel\\source\\repos\\Side projects\\ProjectControlsReportingTool.API\\ProjectControlsReportingTool.API.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\biyel\\.nuget\\packages\\automapper\\12.0.1\\automapper.12.0.1.nupkg.sha512",
     "C:\\Users\\biyel\\.nuget\\packages\\automapper.extensions.microsoft.dependencyinjection\\12.0.1\\automapper.extensions.microsoft.dependencyinjection.12.0.1.nupkg.sha512",

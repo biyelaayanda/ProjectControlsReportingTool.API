@@ -4855,11 +4855,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\biyel\\source\\repos\\Side projects\\ProjectControlsReportingTool\\ProjectControlsReportingTool.API\\ProjectControlsReportingTool.API.csproj",
+      "projectUniqueName": "C:\\Users\\biyel\\source\\repos\\Side projects\\ProjectControlsReportingTool.API\\ProjectControlsReportingTool.API.csproj",
       "projectName": "ProjectControlsReportingTool.API",
-      "projectPath": "C:\\Users\\biyel\\source\\repos\\Side projects\\ProjectControlsReportingTool\\ProjectControlsReportingTool.API\\ProjectControlsReportingTool.API.csproj",
+      "projectPath": "C:\\Users\\biyel\\source\\repos\\Side projects\\ProjectControlsReportingTool.API\\ProjectControlsReportingTool.API.csproj",
       "packagesPath": "C:\\Users\\biyel\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\biyel\\source\\repos\\Side projects\\ProjectControlsReportingTool\\ProjectControlsReportingTool.API\\obj\\",
+      "outputPath": "C:\\Users\\biyel\\source\\repos\\Side projects\\ProjectControlsReportingTool.API\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

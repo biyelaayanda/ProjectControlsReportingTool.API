@@ -9,6 +9,7 @@ using ProjectControlsReportingTool.API.Repositories.Base;
 using ProjectControlsReportingTool.API.Repositories.Implementations;
 using ProjectControlsReportingTool.API.Business.Interfaces;
 using ProjectControlsReportingTool.API.Business.Services;
+using ProjectControlsReportingTool.API.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,6 +34,7 @@ void SetupDependencyInjection(WebApplicationBuilder webApplicationBuilder)
     // Business services
     webApplicationBuilder.Services.AddScoped<IUserService, UserService>();
     webApplicationBuilder.Services.AddScoped<IReportService, ReportService>();
+    webApplicationBuilder.Services.AddScoped<IAuthService, AuthService>();
 }
 
 // Add services to the container
@@ -131,6 +133,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Add security middleware
+app.UseMiddleware<SecurityMiddleware>();
+app.UseMiddleware<RateLimitingMiddleware>();
 
 app.UseCors("DefaultPolicy");
 
