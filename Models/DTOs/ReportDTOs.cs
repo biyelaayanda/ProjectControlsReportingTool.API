@@ -15,6 +15,14 @@ namespace ProjectControlsReportingTool.API.Models.DTOs
         [StringLength(500)]
         public string? Description { get; set; }
 
+        [StringLength(100)]
+        public string? Type { get; set; }
+
+        [StringLength(20)]
+        public string Priority { get; set; } = "Medium";
+
+        public DateTime? DueDate { get; set; }
+
         [Required]
         public Department Department { get; set; }
     }
@@ -30,6 +38,14 @@ namespace ProjectControlsReportingTool.API.Models.DTOs
 
         [StringLength(500)]
         public string? Description { get; set; }
+
+        [StringLength(100)]
+        public string? Type { get; set; }
+
+        [StringLength(20)]
+        public string Priority { get; set; } = "Medium";
+
+        public DateTime? DueDate { get; set; }
     }
 
     public class ReportDto
@@ -38,6 +54,9 @@ namespace ProjectControlsReportingTool.API.Models.DTOs
         public string Title { get; set; } = string.Empty;
         public string Content { get; set; } = string.Empty;
         public string? Description { get; set; }
+        public string? Type { get; set; }
+        public string Priority { get; set; } = "Medium";
+        public DateTime? DueDate { get; set; }
         public ReportStatus Status { get; set; }
         public string StatusName { get; set; } = string.Empty;
         public Guid CreatedBy { get; set; }

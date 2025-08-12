@@ -46,8 +46,11 @@ namespace ProjectControlsReportingTool.API.Business.Services
                     Title = dto.Title,
                     Content = dto.Content,
                     Description = dto.Description,
+                    Type = dto.Type,
+                    Priority = dto.Priority,
+                    DueDate = dto.DueDate,
                     CreatedBy = userId,
-                    Department = user.Department,
+                    Department = dto.Department, // Use department from DTO instead of user department
                     Status = ReportStatus.Draft,
                     CreatedDate = DateTime.UtcNow,
                     LastModifiedDate = DateTime.UtcNow

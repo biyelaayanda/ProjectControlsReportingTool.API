@@ -20,6 +20,14 @@ namespace ProjectControlsReportingTool.API.Models.Entities
         [StringLength(500)]
         public string? Description { get; set; }
 
+        [StringLength(100)]
+        public string? Type { get; set; }
+
+        [StringLength(20)]
+        public string Priority { get; set; } = "Medium";
+
+        public DateTime? DueDate { get; set; }
+
         [Required]
         public ReportStatus Status { get; set; } = ReportStatus.Draft;
 

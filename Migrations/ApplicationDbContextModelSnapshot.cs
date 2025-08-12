@@ -60,7 +60,7 @@ namespace ProjectControlsReportingTool.API.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("AuditLogs");
+                    b.ToTable("AuditLogs", (string)null);
                 });
 
             modelBuilder.Entity("ProjectControlsReportingTool.API.Models.Entities.Report", b =>
@@ -91,6 +91,9 @@ namespace ProjectControlsReportingTool.API.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<DateTime?>("DueDate")
+                        .HasColumnType("datetime2");
+
                     b.Property<DateTime?>("ExecutiveApprovedDate")
                         .HasColumnType("datetime2");
 
@@ -101,6 +104,11 @@ namespace ProjectControlsReportingTool.API.Migrations
 
                     b.Property<DateTime?>("ManagerApprovedDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("Priority")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<Guid?>("RejectedBy")
                         .HasColumnType("uniqueidentifier");
@@ -127,13 +135,17 @@ namespace ProjectControlsReportingTool.API.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<string>("Type")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedBy");
 
                     b.HasIndex("RejectedBy");
 
-                    b.ToTable("Reports");
+                    b.ToTable("Reports", (string)null);
                 });
 
             modelBuilder.Entity("ProjectControlsReportingTool.API.Models.Entities.ReportAttachment", b =>
@@ -188,7 +200,7 @@ namespace ProjectControlsReportingTool.API.Migrations
 
                     b.HasIndex("UploadedBy");
 
-                    b.ToTable("ReportAttachments");
+                    b.ToTable("ReportAttachments", (string)null);
                 });
 
             modelBuilder.Entity("ProjectControlsReportingTool.API.Models.Entities.ReportSignature", b =>
@@ -228,7 +240,7 @@ namespace ProjectControlsReportingTool.API.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ReportSignatures");
+                    b.ToTable("ReportSignatures", (string)null);
                 });
 
             modelBuilder.Entity("ProjectControlsReportingTool.API.Models.Entities.User", b =>
@@ -290,7 +302,7 @@ namespace ProjectControlsReportingTool.API.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("ProjectControlsReportingTool.API.Models.Entities.AuditLog", b =>

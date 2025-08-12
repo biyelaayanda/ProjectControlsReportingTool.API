@@ -16,22 +16,30 @@ namespace ProjectControlsReportingTool.API.Repositories.Implementations
 
         public async Task<Report> CreateReportAsync(Report report)
         {
-            var parameters = new[]
+            try
             {
-                new SqlParameter("@Id", report.Id),
-                new SqlParameter("@Title", report.Title),
-                new SqlParameter("@Content", report.Content),
-                new SqlParameter("@Description", (object)report.Description ?? DBNull.Value),
-                new SqlParameter("@CreatedBy", report.CreatedBy),
-                new SqlParameter("@Department", (int)report.Department),
-                new SqlParameter("@ReportNumber", (object)report.ReportNumber ?? DBNull.Value)
-            };
+                await _context.Database.ExecuteSqlRawAsync(
+                    "EXEC CreateReport @Id, @Title, @Content, @Description, @Type, @Priority, @DueDate, @CreatedBy, @Department, @ReportNumber",
+                    new SqlParameter("@Id", report.Id),
+                    new SqlParameter("@Title", report.Title),
+                    new SqlParameter("@Content", report.Content),
+                    new SqlParameter("@Description", (object?)report.Description ?? DBNull.Value),
+                    new SqlParameter("@Type", (object?)report.Type ?? DBNull.Value),
+                    new SqlParameter("@Priority", report.Priority),
+                    new SqlParameter("@DueDate", (object?)report.DueDate ?? DBNull.Value),
+                    new SqlParameter("@CreatedBy", report.CreatedBy),
+                    new SqlParameter("@Department", (int)report.Department),
+                    new SqlParameter("@ReportNumber", (object?)report.ReportNumber ?? DBNull.Value)
+                );
 
-            var reports = await _context.Reports
-                .FromSqlRaw("EXEC CreateReport @Id, @Title, @Content, @Description, @CreatedBy, @Department, @ReportNumber", parameters)
-                .ToListAsync();
-
-            return reports.First();
+                // Return the created report by querying it back
+                return await _context.Reports
+                    .FirstAsync(r => r.Id == report.Id);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error creating report: {ex.Message}", ex);
+            }
         }
 
         // Implement IReportRepository interface methods

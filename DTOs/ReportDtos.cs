@@ -8,6 +8,9 @@ namespace ProjectControlsReportingTool.API.DTOs
         public string Title { get; set; } = string.Empty;
         public string Content { get; set; } = string.Empty;
         public string? Description { get; set; }
+        public string? Type { get; set; }
+        public string Priority { get; set; } = "Medium";
+        public DateTime? DueDate { get; set; }
         public ReportStatus Status { get; set; }
         public string StatusName { get; set; } = string.Empty;
         public Guid CreatedBy { get; set; }
@@ -59,6 +62,9 @@ namespace ProjectControlsReportingTool.API.DTOs
         public string Title { get; set; } = string.Empty;
         public string Content { get; set; } = string.Empty;
         public string? Description { get; set; }
+        public string? Type { get; set; }
+        public string Priority { get; set; } = "Medium";
+        public DateTime? DueDate { get; set; }
         public Department Department { get; set; }
     }
 
@@ -67,6 +73,9 @@ namespace ProjectControlsReportingTool.API.DTOs
         public string Title { get; set; } = string.Empty;
         public string Content { get; set; } = string.Empty;
         public string? Description { get; set; }
+        public string? Type { get; set; }
+        public string Priority { get; set; } = "Medium";
+        public DateTime? DueDate { get; set; }
     }
 
     public class ReportApprovalDto
