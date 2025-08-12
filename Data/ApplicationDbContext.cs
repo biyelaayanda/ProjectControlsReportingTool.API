@@ -106,8 +106,10 @@ namespace ProjectControlsReportingTool.API.Data
 
         private static void SeedData(ModelBuilder modelBuilder)
         {
-            // Seed some initial admin user
-            var adminId = Guid.NewGuid();
+            // Seed some initial admin user with static values
+            var adminId = new Guid("12345678-1234-5678-9012-123456789012");
+            var adminCreatedDate = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            
             modelBuilder.Entity<User>().HasData(new User
             {
                 Id = adminId,
@@ -119,7 +121,7 @@ namespace ProjectControlsReportingTool.API.Data
                 Role = UserRole.Executive,
                 Department = Department.ProjectSupport,
                 IsActive = true,
-                CreatedDate = DateTime.UtcNow,
+                CreatedDate = adminCreatedDate,
                 JobTitle = "System Administrator"
             });
         }

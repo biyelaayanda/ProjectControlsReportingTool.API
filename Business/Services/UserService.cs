@@ -39,7 +39,8 @@ namespace ProjectControlsReportingTool.API.Business.Services
                     {
                         Token = string.Empty,
                         User = null!,
-                        ExpiresAt = DateTime.UtcNow
+                        ExpiresAt = DateTime.UtcNow,
+                        ErrorMessage = "Email address is already registered. Please use a different email or try logging in."
                     };
                 }
 
@@ -79,13 +80,14 @@ namespace ProjectControlsReportingTool.API.Business.Services
                     ExpiresAt = expiresAt
                 };
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 return new AuthResponseDto
                 {
                     Token = string.Empty,
                     User = null!,
-                    ExpiresAt = DateTime.UtcNow
+                    ExpiresAt = DateTime.UtcNow,
+                    ErrorMessage = $"Registration failed: {ex.Message}"
                 };
             }
         }
