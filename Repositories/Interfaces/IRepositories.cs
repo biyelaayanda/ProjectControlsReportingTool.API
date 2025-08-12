@@ -5,6 +5,7 @@ namespace ProjectControlsReportingTool.API.Repositories.Interfaces
 {
     public interface IReportRepository : IBaseRepository<Report>
     {
+        Task<Report> CreateReportAsync(Report report);
         Task<IEnumerable<Report>> GetByCreatorAsync(Guid creatorId);
         Task<IEnumerable<Report>> GetByDepartmentAsync(Department department);
         Task<IEnumerable<Report>> GetByStatusAsync(ReportStatus status);
@@ -16,6 +17,8 @@ namespace ProjectControlsReportingTool.API.Repositories.Interfaces
         Task UpdateStatusAsync(Guid reportId, ReportStatus status);
         Task<IEnumerable<Report>> SearchReportsAsync(string searchTerm, Guid? userId = null, UserRole? userRole = null);
         Task<(IEnumerable<Report> Reports, int TotalCount)> GetPagedReportsAsync(int page, int pageSize, Guid? userId = null, UserRole? userRole = null, ReportStatus? status = null, Department? department = null);
+        Task<bool> ApproveReportAsync(Guid reportId, Guid approvedBy, string? comments);
+        Task<bool> RejectReportAsync(Guid reportId, Guid rejectedBy, string reason);
     }
 
     public interface IReportSignatureRepository : IBaseRepository<ReportSignature>

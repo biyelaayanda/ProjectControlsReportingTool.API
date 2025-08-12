@@ -42,6 +42,7 @@ namespace ProjectControlsReportingTool.API.Models.Enums
         Rejected = 5,
         Signed = 6,
         Downloaded = 7,
-        Uploaded = 8
+        Uploaded = 8,
+        Deleted = 9
     }
 }

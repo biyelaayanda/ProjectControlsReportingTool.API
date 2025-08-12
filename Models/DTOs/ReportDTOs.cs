@@ -14,6 +14,9 @@ namespace ProjectControlsReportingTool.API.Models.DTOs
 
         [StringLength(500)]
         public string? Description { get; set; }
+
+        [Required]
+        public Department Department { get; set; }
     }
 
     public class UpdateReportDto
@@ -142,5 +145,48 @@ namespace ProjectControlsReportingTool.API.Models.DTOs
         public int TotalPages { get; set; }
         public bool HasNext { get; set; }
         public bool HasPrevious { get; set; }
+    }
+
+    // Additional DTOs for controller methods
+    public class UpdateReportStatusDto
+    {
+        [Required]
+        public ReportStatus Status { get; set; }
+        public string? Comments { get; set; }
+    }
+
+    public class ApprovalDto
+    {
+        public string? Comments { get; set; }
+    }
+
+    public class RejectionDto
+    {
+        [Required]
+        [StringLength(1000)]
+        public string Reason { get; set; } = string.Empty;
+    }
+
+    public class ReportDetailDto : ReportDto
+    {
+        // Inherits all properties from ReportDto
+        // Additional detail properties are already included in ReportDto
+    }
+
+    public class ServiceResultDto
+    {
+        public bool Success { get; set; }
+        public string? ErrorMessage { get; set; }
+        public object? Data { get; set; }
+
+        public static ServiceResultDto SuccessResult(object? data = null)
+        {
+            return new ServiceResultDto { Success = true, Data = data };
+        }
+
+        public static ServiceResultDto ErrorResult(string errorMessage)
+        {
+            return new ServiceResultDto { Success = false, ErrorMessage = errorMessage };
+        }
     }
 }
