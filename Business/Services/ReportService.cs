@@ -1,0 +1,320 @@
+using ProjectControlsReportingTool.API.Business.Interfaces;
+using ProjectControlsReportingTool.API.Repositories.Interfaces;
+using ProjectControlsReportingTool.API.Models.DTOs;
+using ProjectControlsReportingTool.API.Models.Entities;
+using ProjectControlsReportingTool.API.Models.Enums;
+using AutoMapper;
+
+namespace ProjectControlsReportingTool.API.Business.Services
+{
+    public class ReportService : IReportService
+    {
+        private readonly IReportRepository _reportRepository;
+        private readonly IUserRepository _userRepository;
+        private readonly IAuditLogRepository _auditLogRepository;
+        private readonly IMapper _mapper;
+        private readonly ILogger<ReportService> _logger;
+
+        public ReportService(
+            IReportRepository reportRepository,
+            IUserRepository userRepository,
+            IAuditLogRepository auditLogRepository,
+            IMapper mapper,
+            ILogger<ReportService> logger)
+        {
+            _reportRepository = reportRepository;
+            _userRepository = userRepository;
+            _auditLogRepository = auditLogRepository;
+            _mapper = mapper;
+            _logger = logger;
+        }
+
+        public async Task<ReportDto?> CreateReportAsync(CreateReportDto dto, Guid userId)
+        {
+            try
+            {
+                var user = await _userRepository.GetByIdAsync(userId);
+                if (user == null)
+                {
+                    _logger.LogWarning("User {UserId} not found", userId);
+                    return null;
+                }
+
+                var report = new Report
+                {
+                    Id = Guid.NewGuid(),
+                    Title = dto.Title,
+                    Content = dto.Content,
+                    Description = dto.Description,
+                    CreatedBy = userId,
+                    Department = user.Department,
+                    Status = ReportStatus.Draft,
+                    CreatedDate = DateTime.UtcNow,
+                    LastModifiedDate = DateTime.UtcNow
+                };
+
+                // Generate report number
+                report.ReportNumber = await _reportRepository.GenerateReportNumberAsync(user.Department);
+
+                var createdReport = await _reportRepository.CreateReportAsync(report);
+
+                // Log the action
+                await _auditLogRepository.LogActionAsync(AuditAction.Created, userId, createdReport.Id, 
+                    $"Report created: {createdReport.Title}");
+
+                return _mapper.Map<ReportDto>(createdReport);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating report for user {UserId}", userId);
+                return null;
+            }
+        }
+
+        public async Task<IEnumerable<ReportSummaryDto>> GetReportsAsync(ReportFilterDto filter, Guid userId, UserRole userRole, Department userDepartment)
+        {
+            try
+            {
+                IEnumerable<Report> reports;
+
+                if (!string.IsNullOrEmpty(filter.SearchTerm))
+                {
+                    reports = await _reportRepository.SearchReportsAsync(filter.SearchTerm, filter.Department, filter.Status, filter.FromDate, filter.ToDate);
+                }
+                else
+                {
+                    switch (userRole)
+                    {
+                        case UserRole.Executive:
+                            reports = await _reportRepository.GetAllAsync();
+                            break;
+                        case UserRole.LineManager:
+                            reports = await _reportRepository.GetReportsByDepartmentAsync(userDepartment);
+                            break;
+                        case UserRole.GeneralStaff:
+                        default:
+                            reports = await _reportRepository.GetReportsByUserAsync(userId);
+                            break;
+                    }
+                }
+
+                // Apply additional filters
+                if (filter.Status.HasValue)
+                    reports = reports.Where(r => r.Status == filter.Status.Value);
+
+                if (filter.Department.HasValue && userRole == UserRole.Executive)
+                    reports = reports.Where(r => r.Department == filter.Department.Value);
+
+                if (filter.FromDate.HasValue)
+                    reports = reports.Where(r => r.CreatedDate >= filter.FromDate.Value);
+
+                if (filter.ToDate.HasValue)
+                    reports = reports.Where(r => r.CreatedDate <= filter.ToDate.Value);
+
+                return _mapper.Map<IEnumerable<ReportSummaryDto>>(reports.OrderByDescending(r => r.LastModifiedDate));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting reports for user {UserId}", userId);
+                return new List<ReportSummaryDto>();
+            }
+        }
+
+        public async Task<ReportDetailDto?> GetReportByIdAsync(Guid reportId, Guid userId, UserRole userRole)
+        {
+            try
+            {
+                var user = await _userRepository.GetByIdAsync(userId);
+                if (user == null) return null;
+
+                var canAccess = await _reportRepository.CanUserAccessReportAsync(reportId, userId, userRole, user.Department);
+                if (!canAccess) return null;
+
+                var report = await _reportRepository.GetReportWithDetailsAsync(reportId);
+                if (report == null) return null;
+
+                return _mapper.Map<ReportDetailDto>(report);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting report {ReportId} for user {UserId}", reportId, userId);
+                return null;
+            }
+        }
+
+        public async Task<ServiceResultDto> UpdateReportStatusAsync(Guid reportId, UpdateReportStatusDto dto, Guid userId, UserRole userRole)
+        {
+            try
+            {
+                var user = await _userRepository.GetByIdAsync(userId);
+                if (user == null)
+                    return ServiceResultDto.ErrorResult("User not found");
+
+                var canAccess = await _reportRepository.CanUserAccessReportAsync(reportId, userId, userRole, user.Department);
+                if (!canAccess)
+                    return ServiceResultDto.ErrorResult("Access denied");
+
+                var success = await _reportRepository.UpdateReportStatusAsync(reportId, dto.Status, userId);
+                if (success)
+                {
+                    await _auditLogRepository.LogActionAsync(AuditAction.Updated, userId, reportId, 
+                        $"Status changed to {dto.Status}");
+                    return ServiceResultDto.SuccessResult();
+                }
+
+                return ServiceResultDto.ErrorResult("Failed to update status");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating report status for report {ReportId}", reportId);
+                return ServiceResultDto.ErrorResult("An error occurred");
+            }
+        }
+
+        public async Task<ServiceResultDto> ApproveReportAsync(Guid reportId, ApprovalDto dto, Guid userId, UserRole userRole)
+        {
+            try
+            {
+                var user = await _userRepository.GetByIdAsync(userId);
+                if (user == null)
+                    return ServiceResultDto.ErrorResult("User not found");
+
+                if (userRole != UserRole.LineManager && userRole != UserRole.Executive)
+                    return ServiceResultDto.ErrorResult("Insufficient permissions");
+
+                var success = await _reportRepository.ApproveReportAsync(reportId, userId, dto.Comments);
+                if (success)
+                {
+                    await _auditLogRepository.LogActionAsync(AuditAction.Approved, userId, reportId, 
+                        $"Report approved by {userRole}: {dto.Comments}");
+                    return ServiceResultDto.SuccessResult();
+                }
+
+                return ServiceResultDto.ErrorResult("Failed to approve report");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error approving report {ReportId}", reportId);
+                return ServiceResultDto.ErrorResult("An error occurred");
+            }
+        }
+
+        public async Task<ServiceResultDto> RejectReportAsync(Guid reportId, RejectionDto dto, Guid userId, UserRole userRole)
+        {
+            try
+            {
+                var user = await _userRepository.GetByIdAsync(userId);
+                if (user == null)
+                    return ServiceResultDto.ErrorResult("User not found");
+
+                if (userRole != UserRole.LineManager && userRole != UserRole.Executive)
+                    return ServiceResultDto.ErrorResult("Insufficient permissions");
+
+                var success = await _reportRepository.RejectReportAsync(reportId, userId, dto.Reason);
+                if (success)
+                {
+                    await _auditLogRepository.LogActionAsync(AuditAction.Rejected, userId, reportId, 
+                        $"Report rejected by {userRole}: {dto.Reason}");
+                    return ServiceResultDto.SuccessResult();
+                }
+
+                return ServiceResultDto.ErrorResult("Failed to reject report");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error rejecting report {ReportId}", reportId);
+                return ServiceResultDto.ErrorResult("An error occurred");
+            }
+        }
+
+        public async Task<ServiceResultDto> DeleteReportAsync(Guid reportId, Guid userId, UserRole userRole)
+        {
+            try
+            {
+                var user = await _userRepository.GetByIdAsync(userId);
+                if (user == null)
+                    return ServiceResultDto.ErrorResult("User not found");
+
+                var report = await _reportRepository.GetByIdAsync(reportId);
+                if (report == null)
+                    return ServiceResultDto.ErrorResult("Report not found");
+
+                // Only allow deletion if user is the creator and report is in draft status, or user is executive
+                if (userRole != UserRole.Executive && (report.CreatedBy != userId || report.Status != ReportStatus.Draft))
+                    return ServiceResultDto.ErrorResult("Cannot delete this report");
+
+                await _reportRepository.DeleteAsync(reportId);
+                await _auditLogRepository.LogActionAsync(AuditAction.Deleted, userId, reportId, "Report deleted");
+
+                return ServiceResultDto.SuccessResult();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting report {ReportId}", reportId);
+                return ServiceResultDto.ErrorResult("An error occurred");
+            }
+        }
+
+        public async Task<IEnumerable<ReportSummaryDto>> GetPendingApprovalsAsync(Guid userId, UserRole userRole, Department userDepartment)
+        {
+            try
+            {
+                IEnumerable<Report> reports = userRole switch
+                {
+                    UserRole.LineManager => await _reportRepository.GetPendingApprovalsForManagerAsync(userDepartment),
+                    UserRole.Executive => await _reportRepository.GetPendingApprovalsForExecutiveAsync(),
+                    _ => new List<Report>()
+                };
+
+                return _mapper.Map<IEnumerable<ReportSummaryDto>>(reports.OrderByDescending(r => r.SubmittedDate));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting pending approvals for user {UserId}", userId);
+                return new List<ReportSummaryDto>();
+            }
+        }
+
+        public async Task<IEnumerable<ReportSummaryDto>> GetUserReportsAsync(Guid userId)
+        {
+            try
+            {
+                var reports = await _reportRepository.GetReportsByUserAsync(userId);
+                return _mapper.Map<IEnumerable<ReportSummaryDto>>(reports.OrderByDescending(r => r.LastModifiedDate));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting reports for user {UserId}", userId);
+                return new List<ReportSummaryDto>();
+            }
+        }
+
+        public async Task<IEnumerable<ReportSummaryDto>> GetTeamReportsAsync(Guid managerId, Department department)
+        {
+            try
+            {
+                var reports = await _reportRepository.GetReportsByDepartmentAsync(department);
+                return _mapper.Map<IEnumerable<ReportSummaryDto>>(reports.OrderByDescending(r => r.LastModifiedDate));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting team reports for manager {ManagerId}", managerId);
+                return new List<ReportSummaryDto>();
+            }
+        }
+
+        public async Task<IEnumerable<ReportSummaryDto>> GetExecutiveReportsAsync()
+        {
+            try
+            {
+                var reports = await _reportRepository.GetAllAsync();
+                return _mapper.Map<IEnumerable<ReportSummaryDto>>(reports.OrderByDescending(r => r.LastModifiedDate));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting executive reports");
+                return new List<ReportSummaryDto>();
+            }
+        }
+    }
+}

@@ -3,23 +3,7 @@ using ProjectControlsReportingTool.API.Models.Enums;
 
 namespace ProjectControlsReportingTool.API.Repositories.Interfaces
 {
-    public interface IReportRepository : IBaseRepository<Report>
-    {
-        Task<Report> CreateReportAsync(Report report);
-        Task<IEnumerable<Report>> GetByCreatorAsync(Guid creatorId);
-        Task<IEnumerable<Report>> GetByDepartmentAsync(Department department);
-        Task<IEnumerable<Report>> GetByStatusAsync(ReportStatus status);
-        Task<IEnumerable<Report>> GetPendingForUserAsync(Guid userId, UserRole userRole);
-        Task<IEnumerable<Report>> GetCompletedByUserAsync(Guid userId, UserRole userRole);
-        Task<Report?> GetWithDetailsAsync(Guid reportId);
-        Task<string> GenerateReportNumberAsync(Department department);
-        Task<bool> CanUserAccessReportAsync(Guid userId, Guid reportId, UserRole userRole);
-        Task UpdateStatusAsync(Guid reportId, ReportStatus status);
-        Task<IEnumerable<Report>> SearchReportsAsync(string searchTerm, Guid? userId = null, UserRole? userRole = null);
-        Task<(IEnumerable<Report> Reports, int TotalCount)> GetPagedReportsAsync(int page, int pageSize, Guid? userId = null, UserRole? userRole = null, ReportStatus? status = null, Department? department = null);
-        Task<bool> ApproveReportAsync(Guid reportId, Guid approvedBy, string? comments);
-        Task<bool> RejectReportAsync(Guid reportId, Guid rejectedBy, string reason);
-    }
+    // IReportRepository moved to separate file to avoid duplication
 
     public interface IReportSignatureRepository : IBaseRepository<ReportSignature>
     {

@@ -329,5 +329,96 @@ namespace ProjectControlsReportingTool.API.Repositories.Implementations
 
             return result > 0;
         }
+
+        // Implement missing interface methods
+        public async Task<IEnumerable<Report>> GetReportsByUserAsync(Guid userId)
+        {
+            return await GetByCreatorAsync(userId);
+        }
+
+        public async Task<IEnumerable<Report>> GetReportsByDepartmentAsync(Department department)
+        {
+            return await GetByDepartmentAsync(department);
+        }
+
+        public async Task<IEnumerable<Report>> GetReportsByStatusAsync(ReportStatus status)
+        {
+            return await GetByStatusAsync(status);
+        }
+
+        public async Task<IEnumerable<Report>> GetPendingApprovalsForManagerAsync(Department department)
+        {
+            var parameters = new[]
+            {
+                new SqlParameter("@Department", (int)department)
+            };
+            return await _context.Reports
+                .FromSqlRaw("EXEC GetPendingApprovalsForManager @Department", parameters)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Report>> GetPendingApprovalsForExecutiveAsync()
+        {
+            return await _context.Reports
+                .FromSqlRaw("EXEC GetPendingApprovalsForExecutive")
+                .ToListAsync();
+        }
+
+        public async Task<bool> UpdateReportStatusAsync(Guid reportId, ReportStatus status, Guid updatedBy)
+        {
+            var report = await _dbSet.FindAsync(reportId);
+            if (report != null)
+            {
+                report.Status = status;
+                report.LastModifiedDate = DateTime.UtcNow;
+                
+                // Update specific date fields based on status
+                switch (status)
+                {
+                    case ReportStatus.Submitted:
+                        report.SubmittedDate = DateTime.UtcNow;
+                        break;
+                    case ReportStatus.ManagerApproved:
+                        report.ManagerApprovedDate = DateTime.UtcNow;
+                        break;
+                    case ReportStatus.Completed:
+                        report.ExecutiveApprovedDate = DateTime.UtcNow;
+                        report.CompletedDate = DateTime.UtcNow;
+                        break;
+                }
+
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            return false;
+        }
+
+        public async Task<Report?> GetReportWithDetailsAsync(Guid reportId)
+        {
+            return await GetWithDetailsAsync(reportId);
+        }
+
+        public async Task<bool> CanUserAccessReportAsync(Guid reportId, Guid userId, UserRole userRole, Department userDepartment)
+        {
+            return await CanUserAccessReportAsync(userId, reportId, userRole);
+        }
+
+        public async Task<IEnumerable<Report>> SearchReportsAsync(string searchTerm, Department? department, ReportStatus? status, DateTime? fromDate, DateTime? toDate)
+        {
+            var parameters = new[]
+            {
+                new SqlParameter("@SearchTerm", (object)searchTerm ?? DBNull.Value),
+                new SqlParameter("@Department", department.HasValue ? (int)department.Value : DBNull.Value),
+                new SqlParameter("@Status", status.HasValue ? (int)status.Value : DBNull.Value),
+                new SqlParameter("@FromDate", (object)fromDate ?? DBNull.Value),
+                new SqlParameter("@ToDate", (object)toDate ?? DBNull.Value),
+                new SqlParameter("@Page", 1),
+                new SqlParameter("@PageSize", 100)
+            };
+
+            return await _context.Reports
+                .FromSqlRaw("EXEC SearchReports @SearchTerm, @Department, @Status, @FromDate, @ToDate, @Page, @PageSize", parameters)
+                .ToListAsync();
+        }
     }
 }
