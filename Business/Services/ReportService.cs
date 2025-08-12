@@ -387,9 +387,10 @@ namespace ProjectControlsReportingTool.API.Business.Services
         {
             try
             {
-                // Only staff can submit reports
-                if (userRole != UserRole.GeneralStaff)
-                    return ServiceResultDto.ErrorResult("Only staff members can submit reports");
+                // Only staff and line managers can submit reports
+                // Staff submit to line managers, Line managers submit to executives
+                if (userRole != UserRole.GeneralStaff && userRole != UserRole.LineManager)
+                    return ServiceResultDto.ErrorResult("Only staff members and line managers can submit reports");
 
                 var report = await _reportRepository.GetByIdAsync(reportId);
                 if (report == null)
