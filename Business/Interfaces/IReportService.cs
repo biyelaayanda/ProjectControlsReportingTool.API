@@ -11,6 +11,7 @@ namespace ProjectControlsReportingTool.API.Business.Interfaces
         Task<ReportDetailDto?> GetReportByIdAsync(Guid reportId, Guid userId, UserRole userRole);
         Task<ServiceResultDto> UpdateReportStatusAsync(Guid reportId, UpdateReportStatusDto dto, Guid userId, UserRole userRole);
         Task<ServiceResultDto> ApproveReportAsync(Guid reportId, ApprovalDto dto, Guid userId, UserRole userRole);
+        Task<ServiceResultDto> SubmitReportAsync(Guid reportId, SubmitReportDto dto, Guid userId, UserRole userRole);
         Task<ServiceResultDto> RejectReportAsync(Guid reportId, RejectionDto dto, Guid userId, UserRole userRole);
         Task<ServiceResultDto> DeleteReportAsync(Guid reportId, Guid userId, UserRole userRole);
         Task<IEnumerable<ReportSummaryDto>> GetPendingApprovalsAsync(Guid userId, UserRole userRole, Department userDepartment);

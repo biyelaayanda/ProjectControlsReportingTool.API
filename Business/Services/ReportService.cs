@@ -83,20 +83,11 @@ namespace ProjectControlsReportingTool.API.Business.Services
                 }
                 else
                 {
-                    switch (userRole)
-                    {
-                        case UserRole.Executive:
-                            reports = await _reportRepository.GetAllAsync();
-                            break;
-                        case UserRole.LineManager:
-                            reports = await _reportRepository.GetReportsByDepartmentAsync(userDepartment);
-                            break;
-                        case UserRole.GeneralStaff:
-                        default:
-                            reports = await _reportRepository.GetReportsByUserAsync(userId);
-                            break;
-                    }
+                    reports = await _reportRepository.GetAllAsync();
                 }
+
+                // Apply role-based filtering for workflow visibility
+                reports = ApplyRoleBasedFiltering(reports, userId, userRole, userDepartment);
 
                 // Apply additional filters
                 if (filter.Status.HasValue)
@@ -182,12 +173,43 @@ namespace ProjectControlsReportingTool.API.Business.Services
                 if (userRole != UserRole.LineManager && userRole != UserRole.Executive)
                     return ServiceResultDto.ErrorResult("Insufficient permissions");
 
-                var success = await _reportRepository.ApproveReportAsync(reportId, userId, dto.Comments);
-                if (success)
+                var report = await _reportRepository.GetByIdAsync(reportId);
+                if (report == null)
+                    return ServiceResultDto.ErrorResult("Report not found");
+
+                // Workflow validation
+                if (userRole == UserRole.LineManager)
                 {
-                    await _auditLogRepository.LogActionAsync(AuditAction.Approved, userId, reportId, 
-                        $"Report approved by {userRole}: {dto.Comments}");
-                    return ServiceResultDto.SuccessResult();
+                    // Line Manager can only approve submitted reports from their department
+                    if (report.Status != ReportStatus.Submitted)
+                        return ServiceResultDto.ErrorResult("Report is not in submitted status");
+                    
+                    if (report.Department != user.Department)
+                        return ServiceResultDto.ErrorResult("You can only approve reports from your department");
+
+                    // Update to ManagerApproved and forward to Executive
+                    var success = await _reportRepository.UpdateReportStatusAsync(reportId, ReportStatus.ManagerApproved, userId);
+                    if (success)
+                    {
+                        await _auditLogRepository.LogActionAsync(AuditAction.Approved, userId, reportId, 
+                            $"Report approved by Line Manager: {dto.Comments}");
+                        return ServiceResultDto.SuccessResult("Report approved and forwarded to Executive");
+                    }
+                }
+                else if (userRole == UserRole.Executive)
+                {
+                    // Executive can only approve manager-approved reports
+                    if (report.Status != ReportStatus.ManagerApproved)
+                        return ServiceResultDto.ErrorResult("Report must be approved by Line Manager first");
+
+                    // Final approval - mark as completed
+                    var success = await _reportRepository.UpdateReportStatusAsync(reportId, ReportStatus.Completed, userId);
+                    if (success)
+                    {
+                        await _auditLogRepository.LogActionAsync(AuditAction.Approved, userId, reportId, 
+                            $"Report given final approval by Executive: {dto.Comments}");
+                        return ServiceResultDto.SuccessResult("Report completed - final approval given");
+                    }
                 }
 
                 return ServiceResultDto.ErrorResult("Failed to approve report");
@@ -314,6 +336,83 @@ namespace ProjectControlsReportingTool.API.Business.Services
             {
                 _logger.LogError(ex, "Error getting executive reports");
                 return new List<ReportSummaryDto>();
+            }
+        }
+
+        private IEnumerable<Report> ApplyRoleBasedFiltering(IEnumerable<Report> reports, Guid userId, UserRole userRole, Department userDepartment)
+        {
+            switch (userRole)
+            {
+                case UserRole.GeneralStaff:
+                    // Staff can only see their own reports
+                    return reports.Where(r => r.CreatedBy == userId);
+
+                case UserRole.LineManager:
+                    // Line managers can see:
+                    // 1. Their own reports
+                    // 2. Reports from their department that are submitted and need their approval
+                    // 3. Reports they have already approved
+                    return reports.Where(r =>
+                        r.CreatedBy == userId ||
+                        (r.Department == userDepartment && (
+                            r.Status == ReportStatus.Submitted ||
+                            r.Status == ReportStatus.ManagerReview ||
+                            r.Status == ReportStatus.ManagerApproved ||
+                            r.Status == ReportStatus.ExecutiveReview ||
+                            r.Status == ReportStatus.Completed
+                        ))
+                    );
+
+                case UserRole.Executive:
+                    // Executives can see:
+                    // 1. Their own reports
+                    // 2. All reports that have been approved by line managers (need executive approval)
+                    // 3. All completed reports for oversight
+                    return reports.Where(r =>
+                        r.CreatedBy == userId ||
+                        r.Status == ReportStatus.ManagerApproved ||
+                        r.Status == ReportStatus.ExecutiveReview ||
+                        r.Status == ReportStatus.Completed
+                    );
+
+                default:
+                    return new List<Report>();
+            }
+        }
+
+        public async Task<ServiceResultDto> SubmitReportAsync(Guid reportId, SubmitReportDto dto, Guid userId, UserRole userRole)
+        {
+            try
+            {
+                // Only staff can submit reports
+                if (userRole != UserRole.GeneralStaff)
+                    return ServiceResultDto.ErrorResult("Only staff members can submit reports");
+
+                var report = await _reportRepository.GetByIdAsync(reportId);
+                if (report == null)
+                    return ServiceResultDto.ErrorResult("Report not found");
+
+                if (report.CreatedBy != userId)
+                    return ServiceResultDto.ErrorResult("You can only submit your own reports");
+
+                if (report.Status != ReportStatus.Draft)
+                    return ServiceResultDto.ErrorResult("Only draft reports can be submitted");
+
+                // Update report status to submitted and assign to line manager
+                var success = await _reportRepository.UpdateReportStatusAsync(reportId, ReportStatus.Submitted, userId);
+                if (success)
+                {
+                    await _auditLogRepository.LogActionAsync(AuditAction.Submitted, userId, reportId, 
+                        $"Report submitted for manager review: {dto.Comments}");
+                    return ServiceResultDto.SuccessResult("Report submitted to Line Manager for review");
+                }
+
+                return ServiceResultDto.ErrorResult("Failed to submit report");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error submitting report {ReportId}", reportId);
+                return ServiceResultDto.ErrorResult("An error occurred");
             }
         }
     }
