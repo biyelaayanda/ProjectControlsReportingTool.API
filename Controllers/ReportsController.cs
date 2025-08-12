@@ -145,7 +145,7 @@ namespace ProjectControlsReportingTool.API.Controllers
 
         private Department GetCurrentUserDepartment()
         {
-            var deptClaim = User.FindFirst("department")?.Value;
+            var deptClaim = User.FindFirst("Department")?.Value;
             return Enum.Parse<Department>(deptClaim ?? throw new UnauthorizedAccessException("User department not found"));
         }
     }
