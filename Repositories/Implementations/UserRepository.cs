@@ -18,16 +18,8 @@ namespace ProjectControlsReportingTool.API.Repositories.Implementations
 
         public async Task<User?> GetByEmailAsync(string email)
         {
-            var parameters = new[]
-            {
-                new SqlParameter("@Email", email)
-            };
-
-            var users = await _context.Users
-                .FromSqlRaw("EXEC GetUserByEmail @Email", parameters)
-                .ToListAsync();
-
-            return users.FirstOrDefault();
+            return await _context.Users
+                .FirstOrDefaultAsync(u => u.Email == email);
         }
 
         public async Task<User?> AuthenticateAsync(string email, string password)
@@ -53,77 +45,34 @@ namespace ProjectControlsReportingTool.API.Repositories.Implementations
 
         public async Task<User?> AuthenticateUserAsync(string email, string passwordHash)
         {
-            var parameters = new[]
-            {
-                new SqlParameter("@Email", email),
-                new SqlParameter("@PasswordHash", passwordHash)
-            };
-
-            var users = await _context.Users
-                .FromSqlRaw("EXEC AuthenticateUser @Email, @PasswordHash", parameters)
-                .ToListAsync();
-
-            return users.FirstOrDefault();
+            return await _context.Users
+                .FirstOrDefaultAsync(u => u.Email == email && u.PasswordHash == passwordHash && u.IsActive);
         }
 
         public async Task<IEnumerable<User>> GetUsersByDepartmentAsync(Department department)
         {
-            var parameters = new[]
-            {
-                new SqlParameter("@Department", (int)department)
-            };
-
             return await _context.Users
-                .FromSqlRaw("EXEC GetUsersByDepartment @Department", parameters)
+                .Where(u => u.Department == department)
                 .ToListAsync();
         }
 
         public async Task<IEnumerable<User>> GetUsersByRoleAsync(UserRole role)
         {
-            var parameters = new[]
-            {
-                new SqlParameter("@Role", (int)role)
-            };
-
             return await _context.Users
-                .FromSqlRaw("EXEC GetUsersByRole @Role", parameters)
+                .Where(u => u.Role == role)
                 .ToListAsync();
         }
 
         public async Task<bool> EmailExistsAsync(string email)
         {
-            var parameters = new[]
-            {
-                new SqlParameter("@Email", email),
-                new SqlParameter("@Exists", System.Data.SqlDbType.Bit) { Direction = System.Data.ParameterDirection.Output }
-            };
-
-            await _context.Database.ExecuteSqlRawAsync("EXEC CheckEmailExists @Email, @Exists OUTPUT", parameters);
-            
-            return (bool)parameters[1].Value;
+            return await _context.Users.AnyAsync(u => u.Email == email);
         }
 
         public async Task<User> CreateUserAsync(User user)
         {
-            var parameters = new[]
-            {
-                new SqlParameter("@Id", user.Id),
-                new SqlParameter("@Email", user.Email),
-                new SqlParameter("@FirstName", user.FirstName),
-                new SqlParameter("@LastName", user.LastName),
-                new SqlParameter("@PasswordHash", user.PasswordHash),
-                new SqlParameter("@PasswordSalt", user.PasswordSalt),
-                new SqlParameter("@Role", (int)user.Role),
-                new SqlParameter("@Department", (int)user.Department),
-                new SqlParameter("@IsActive", user.IsActive),
-                new SqlParameter("@PhoneNumber", (object)user.PhoneNumber ?? DBNull.Value),
-                new SqlParameter("@JobTitle", (object)user.JobTitle ?? DBNull.Value)
-            };
-
-            await _context.Database.ExecuteSqlRawAsync(
-                "EXEC CreateUser @Id, @Email, @FirstName, @LastName, @PasswordHash, @PasswordSalt, @Role, @Department, @IsActive, @PhoneNumber, @JobTitle", 
-                parameters);
-
+            // Use Entity Framework instead of stored procedure
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
             return user;
         }
 

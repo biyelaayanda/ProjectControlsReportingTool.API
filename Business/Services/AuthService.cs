@@ -143,7 +143,7 @@ namespace ProjectControlsReportingTool.API.Business.Services
                 };
 
                 // Save user
-                var createdUser = await _userRepository.AddAsync(user);
+                var createdUser = await _userRepository.CreateUserAsync(user);
 
                 // Log registration
                 await _auditLogRepository.LogActionAsync(
@@ -170,7 +170,7 @@ namespace ProjectControlsReportingTool.API.Business.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error during registration for email: {Email}", registerDto.Email);
-                return new AuthResponseDto { ErrorMessage = "An error occurred during registration" };
+                return new AuthResponseDto { ErrorMessage = $"An error occurred during registration: {ex.Message}" };
             }
         }
 

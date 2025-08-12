@@ -291,23 +291,6 @@ namespace ProjectControlsReportingTool.API.Migrations
                         .IsUnique();
 
                     b.ToTable("Users");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("12345678-1234-5678-9012-123456789012"),
-                            CreatedDate = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Department = 1,
-                            Email = "admin@projectcontrols.com",
-                            FirstName = "System",
-                            IsActive = true,
-                            JobTitle = "System Administrator",
-                            LastLoginDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            LastName = "Administrator",
-                            PasswordHash = "$2a$11$8ZPNVUXQQDDjwGQFAEZ8LuLuVsS1tU.HtPdDEo9p8tYl7Z2kZcZQW",
-                            PasswordSalt = "salt",
-                            Role = 3
-                        });
                 });
 
             modelBuilder.Entity("ProjectControlsReportingTool.API.Models.Entities.AuditLog", b =>
