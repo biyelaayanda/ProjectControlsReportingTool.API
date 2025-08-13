@@ -68,7 +68,8 @@ namespace ProjectControlsReportingTool.API.Business.Mappings
                 Department.QS => "Quantity Surveying",
                 Department.ContractsManagement => "Contracts Management",
                 Department.BusinessAssurance => "Business Assurance",
-                _ => "Unknown"
+                (Department)0 => "Unknown Department", // Handle 0 value explicitly
+                _ => "Unknown Department"
             };
         }
     }

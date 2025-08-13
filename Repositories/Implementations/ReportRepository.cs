@@ -194,19 +194,18 @@ namespace ProjectControlsReportingTool.API.Repositories.Implementations
                 return false;
             }
 
-            Console.WriteLine($"Checking access: User {userId} (Role: {userRole}, Dept: {user.Department}) -> Report {reportId} (Status: {report.Status}, Dept: {report.Department})");
+            Console.WriteLine($"Checking access: User {userId} (Role: {userRole}, Dept: {user.Department}) -> Report {reportId} (Status: {report.Status}, Dept: {report.Department}, CreatedBy: {report.CreatedBy})");
 
-            // Use direct logic instead of stored procedure for now
+            // Use enhanced access logic
             var canAccess = userRole switch
             {
                 UserRole.Executive => true,
-                UserRole.LineManager => report.Department == user.Department || 
-                                      (report.Status == ReportStatus.Completed && (int)report.Department == 0), // Allow Completed reports with no department
+                UserRole.LineManager => await CanLineManagerAccessAsync(userId, reportId, user.Department),
                 UserRole.GeneralStaff => report.CreatedBy == userId,
                 _ => false
             };
             
-            Console.WriteLine($"Access result: {canAccess} (dept match: {report.Department == user.Department}, completed no dept: {report.Status == ReportStatus.Completed && (int)report.Department == 0})");
+            Console.WriteLine($"Access result: {canAccess}");
             return canAccess;
 
             /* Temporarily disabled stored procedure approach
@@ -246,6 +245,39 @@ namespace ProjectControlsReportingTool.API.Repositories.Implementations
                 return fallbackResult;
             }
             */
+        }
+
+        private async Task<bool> CanLineManagerAccessAsync(Guid userId, Guid reportId, Department userDepartment)
+        {
+            var report = await _dbSet.FindAsync(reportId);
+            if (report == null) return false;
+
+            // Line managers can access:
+            // 1. Their own reports (reports they created)
+            if (report.CreatedBy == userId) 
+            {
+                Console.WriteLine($"Access granted: Line Manager owns the report");
+                return true;
+            }
+
+            // 2. Reports from their department
+            if (report.Department == userDepartment)
+            {
+                Console.WriteLine($"Access granted: Report from Line Manager's department");
+                return true;
+            }
+
+            // 3. Reports they have previously reviewed (signature-based)
+            var hasSignature = await _context.ReportSignatures
+                .AnyAsync(s => s.ReportId == reportId && s.UserId == userId && s.IsActive);
+            if (hasSignature)
+            {
+                Console.WriteLine($"Access granted: Line Manager has previously reviewed this report");
+                return true;
+            }
+
+            Console.WriteLine($"Access denied: No valid access path for Line Manager");
+            return false;
         }
 
         public async Task UpdateStatusAsync(Guid reportId, ReportStatus status)
@@ -356,17 +388,34 @@ namespace ProjectControlsReportingTool.API.Repositories.Implementations
 
         public async Task<bool> RejectReportAsync(Guid reportId, Guid rejectedBy, string reason)
         {
-            var parameters = new[]
+            try
             {
-                new SqlParameter("@ReportId", reportId),
-                new SqlParameter("@RejectedBy", rejectedBy),
-                new SqlParameter("@Reason", reason)
-            };
+                var parameters = new[]
+                {
+                    new SqlParameter("@ReportId", reportId),
+                    new SqlParameter("@RejectedBy", rejectedBy),
+                    new SqlParameter("@Reason", reason)
+                };
 
-            var result = await _context.Database.ExecuteSqlRawAsync(
-                "EXEC RejectReport @ReportId, @RejectedBy, @Reason", parameters);
+                Console.WriteLine($"Executing RejectReport SP with ReportId: {reportId}, RejectedBy: {rejectedBy}, Reason: {reason}");
 
-            return result > 0;
+                // Use SqlQueryRaw to capture the result set from the stored procedure
+                var results = await _context.Database
+                    .SqlQueryRaw<int>("EXEC RejectReport @ReportId, @RejectedBy, @Reason", parameters)
+                    .ToListAsync();
+
+                Console.WriteLine($"SP returned {results.Count} results: [{string.Join(", ", results)}]");
+
+                var success = results.Any() && results.First() == 1;
+                Console.WriteLine($"Rejection success: {success}");
+                return success;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in RejectReportAsync: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                return false;
+            }
         }
 
         // Implement missing interface methods

@@ -50,7 +50,7 @@ namespace ProjectControlsReportingTool.API.Business.Services
                     Priority = dto.Priority,
                     DueDate = dto.DueDate,
                     CreatedBy = userId,
-                    Department = dto.Department, // Use department from DTO instead of user department
+                    Department = user.Department, // Use user's department instead of DTO department
                     Status = ReportStatus.Draft,
                     CreatedDate = DateTime.UtcNow,
                     LastModifiedDate = DateTime.UtcNow
@@ -254,25 +254,61 @@ namespace ProjectControlsReportingTool.API.Business.Services
         {
             try
             {
+                Console.WriteLine($"RejectReportAsync called: ReportId={reportId}, UserId={userId}, UserRole={userRole}, Reason={dto.Reason}");
+                
                 var user = await _userRepository.GetByIdAsync(userId);
                 if (user == null)
+                {
+                    Console.WriteLine($"User {userId} not found");
                     return ServiceResultDto.ErrorResult("User not found");
+                }
 
                 if (userRole != UserRole.LineManager && userRole != UserRole.Executive)
+                {
+                    Console.WriteLine($"Insufficient permissions for user {userId} with role {userRole}");
                     return ServiceResultDto.ErrorResult("Insufficient permissions");
+                }
+
+                // Get the report to check current status
+                var report = await _reportRepository.GetByIdAsync(reportId);
+                if (report == null)
+                {
+                    Console.WriteLine($"Report {reportId} not found");
+                    return ServiceResultDto.ErrorResult("Report not found");
+                }
+
+                Console.WriteLine($"Report found: {report.Title}, Status: {report.Status}");
+
+                // Check if report can be rejected based on current status and user role
+                if (userRole == UserRole.LineManager && report.Status != ReportStatus.Submitted)
+                {
+                    Console.WriteLine($"Line Manager cannot reject report with status {report.Status}");
+                    return ServiceResultDto.ErrorResult("Report must be in Submitted status for Line Manager to reject");
+                }
+
+                if (userRole == UserRole.Executive && report.Status != ReportStatus.ManagerApproved && report.Status != ReportStatus.Submitted && report.Status != ReportStatus.ExecutiveReview)
+                {
+                    Console.WriteLine($"Executive cannot reject report with status {report.Status}");
+                    return ServiceResultDto.ErrorResult("Report must be Manager Approved, Executive Review, or Submitted (for manager-created reports) for Executive to reject");
+                }
 
                 var success = await _reportRepository.RejectReportAsync(reportId, userId, dto.Reason);
+                Console.WriteLine($"Repository rejection result: {success}");
+                
                 if (success)
                 {
                     await _auditLogRepository.LogActionAsync(AuditAction.Rejected, userId, reportId, 
                         $"Report rejected by {userRole}: {dto.Reason}");
+                    Console.WriteLine($"Report {reportId} successfully rejected");
                     return ServiceResultDto.SuccessResult();
                 }
 
+                Console.WriteLine($"Failed to reject report {reportId}");
                 return ServiceResultDto.ErrorResult("Failed to reject report");
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"Exception in RejectReportAsync: {ex.Message}");
                 _logger.LogError(ex, "Error rejecting report {ReportId}", reportId);
                 return ServiceResultDto.ErrorResult("An error occurred");
             }
@@ -436,7 +472,7 @@ namespace ProjectControlsReportingTool.API.Business.Services
                 // Determine target status based on submitter role
                 var targetStatus = userRole == UserRole.GeneralStaff 
                     ? ReportStatus.Submitted        // Staff → Line Manager review
-                    : ReportStatus.ManagerApproved; // Line Manager → Executive review
+                    : ReportStatus.Submitted;       // Line Manager → Executive review (changed from ManagerApproved)
 
                 var success = await _reportRepository.UpdateReportStatusAsync(reportId, targetStatus, userId);
                 if (success)
