@@ -118,19 +118,39 @@ namespace ProjectControlsReportingTool.API.Business.Services
         {
             try
             {
+                Console.WriteLine($"GetReportByIdAsync called: ReportId={reportId}, UserId={userId}, UserRole={userRole}");
+                
                 var user = await _userRepository.GetByIdAsync(userId);
-                if (user == null) return null;
+                if (user == null) 
+                {
+                    Console.WriteLine($"User {userId} not found");
+                    return null;
+                }
+                Console.WriteLine($"User found: {user.FirstName} {user.LastName}, Department: {user.Department}");
 
                 var canAccess = await _reportRepository.CanUserAccessReportAsync(reportId, userId, userRole, user.Department);
-                if (!canAccess) return null;
+                Console.WriteLine($"Access check result: {canAccess}");
+                if (!canAccess) 
+                {
+                    Console.WriteLine($"Access denied for user {userId} to report {reportId}");
+                    return null;
+                }
 
                 var report = await _reportRepository.GetReportWithDetailsAsync(reportId);
-                if (report == null) return null;
+                if (report == null) 
+                {
+                    Console.WriteLine($"Report {reportId} not found in database");
+                    return null;
+                }
+                Console.WriteLine($"Report found: {report.Title}, Status: {report.Status}, Department: {report.Department}");
 
-                return _mapper.Map<ReportDetailDto>(report);
+                var result = _mapper.Map<ReportDetailDto>(report);
+                Console.WriteLine($"Successfully mapped report to DTO");
+                return result;
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"Exception in GetReportByIdAsync: {ex.Message}");
                 _logger.LogError(ex, "Error getting report {ReportId} for user {UserId}", reportId, userId);
                 return null;
             }

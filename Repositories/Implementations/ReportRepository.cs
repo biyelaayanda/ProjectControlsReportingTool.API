@@ -8,6 +8,12 @@ using ProjectControlsReportingTool.API.Repositories.Interfaces;
 
 namespace ProjectControlsReportingTool.API.Repositories.Implementations
 {
+    // Helper class for stored procedure result
+    public class CanAccessResult
+    {
+        public int CanAccess { get; set; }
+    }
+
     public class ReportRepository : BaseRepository<Report>, IReportRepository
     {
         public ReportRepository(ApplicationDbContext context) : base(context)
@@ -175,11 +181,35 @@ namespace ProjectControlsReportingTool.API.Repositories.Implementations
         public async Task<bool> CanUserAccessReportAsync(Guid userId, Guid reportId, UserRole userRole)
         {
             var report = await _dbSet.FindAsync(reportId);
-            if (report == null) return false;
+            if (report == null) 
+            {
+                Console.WriteLine($"Report {reportId} not found");
+                return false;
+            }
 
             var user = await _context.Users.FindAsync(userId);
-            if (user == null) return false;
+            if (user == null) 
+            {
+                Console.WriteLine($"User {userId} not found");
+                return false;
+            }
 
+            Console.WriteLine($"Checking access: User {userId} (Role: {userRole}, Dept: {user.Department}) -> Report {reportId} (Status: {report.Status}, Dept: {report.Department})");
+
+            // Use direct logic instead of stored procedure for now
+            var canAccess = userRole switch
+            {
+                UserRole.Executive => true,
+                UserRole.LineManager => report.Department == user.Department || 
+                                      (report.Status == ReportStatus.Completed && (int)report.Department == 0), // Allow Completed reports with no department
+                UserRole.GeneralStaff => report.CreatedBy == userId,
+                _ => false
+            };
+            
+            Console.WriteLine($"Access result: {canAccess} (dept match: {report.Department == user.Department}, completed no dept: {report.Status == ReportStatus.Completed && (int)report.Department == 0})");
+            return canAccess;
+
+            /* Temporarily disabled stored procedure approach
             var parameters = new[]
             {
                 new SqlParameter("@ReportId", reportId),
@@ -191,22 +221,31 @@ namespace ProjectControlsReportingTool.API.Repositories.Implementations
             try
             {
                 var result = await _context.Database
-                    .SqlQuery<int>($"EXEC CanUserAccessReport {reportId}, {userId}, {(int)userRole}, {(int)user.Department}")
+                    .SqlQueryRaw<CanAccessResult>("EXEC CanUserAccessReport @ReportId, @UserId, @UserRole, @UserDepartment", parameters)
                     .ToListAsync();
 
-                return result.FirstOrDefault() == 1;
+                var canAccess = result.FirstOrDefault()?.CanAccess == 1;
+                Console.WriteLine($"Stored procedure result: {canAccess}");
+                return canAccess;
             }
-            catch
+            catch (Exception ex)
             {
-                // Fallback to basic access logic
-                return userRole switch
+                // Log the exception for debugging
+                Console.WriteLine($"Error in CanUserAccessReport SP: {ex.Message}");
+                
+                // Fallback to basic access logic - Line Managers can view all reports from their department
+                var fallbackResult = userRole switch
                 {
                     UserRole.Executive => true,
-                    UserRole.LineManager => report.Department == user.Department,
+                    UserRole.LineManager => report.Department == user.Department, // Allow all statuses for Line Managers
                     UserRole.GeneralStaff => report.CreatedBy == userId,
                     _ => false
                 };
+                
+                Console.WriteLine($"Using fallback logic: {fallbackResult}");
+                return fallbackResult;
             }
+            */
         }
 
         public async Task UpdateStatusAsync(Guid reportId, ReportStatus status)
