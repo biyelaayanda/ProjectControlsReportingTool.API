@@ -326,8 +326,12 @@ namespace ProjectControlsReportingTool.API.Business.Services
                 if (report == null)
                     return ServiceResultDto.ErrorResult("Report not found");
 
-                // Only allow deletion if user is the creator and report is in draft status, or user is executive
-                if (userRole != UserRole.Executive && (report.CreatedBy != userId || report.Status != ReportStatus.Draft))
+                // Only allow deletion if user is the creator and report is in draft/rejected status, or user is executive
+                if (userRole != UserRole.Executive && (report.CreatedBy != userId || 
+                    (report.Status != ReportStatus.Draft && 
+                     report.Status != ReportStatus.Rejected && 
+                     report.Status != ReportStatus.ManagerRejected && 
+                     report.Status != ReportStatus.ExecutiveRejected)))
                     return ServiceResultDto.ErrorResult("Cannot delete this report");
 
                 await _reportRepository.DeleteAsync(reportId);
@@ -466,8 +470,11 @@ namespace ProjectControlsReportingTool.API.Business.Services
                 if (report.CreatedBy != userId)
                     return ServiceResultDto.ErrorResult("You can only submit your own reports");
 
-                if (report.Status != ReportStatus.Draft)
-                    return ServiceResultDto.ErrorResult("Only draft reports can be submitted");
+                if (report.Status != ReportStatus.Draft && 
+                    report.Status != ReportStatus.Rejected && 
+                    report.Status != ReportStatus.ManagerRejected && 
+                    report.Status != ReportStatus.ExecutiveRejected)
+                    return ServiceResultDto.ErrorResult("Only draft or rejected reports can be submitted");
 
                 // Determine target status based on submitter role
                 var targetStatus = userRole == UserRole.GeneralStaff 
