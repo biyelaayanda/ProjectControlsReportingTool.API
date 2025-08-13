@@ -176,7 +176,7 @@ namespace ProjectControlsReportingTool.API.Business.Services
                 if (userRole != UserRole.LineManager && userRole != UserRole.Executive)
                     return ServiceResultDto.ErrorResult("Insufficient permissions");
 
-                var report = await _reportRepository.GetByIdAsync(reportId);
+                var report = await _reportRepository.GetWithDetailsAsync(reportId);
                 if (report == null)
                     return ServiceResultDto.ErrorResult("Report not found");
 
@@ -201,9 +201,15 @@ namespace ProjectControlsReportingTool.API.Business.Services
                 }
                 else if (userRole == UserRole.Executive)
                 {
-                    // Executive can only approve manager-approved reports
-                    if (report.Status != ReportStatus.ManagerApproved)
-                        return ServiceResultDto.ErrorResult("Report must be approved by Line Manager first");
+                    // Executive can approve:
+                    // 1. Manager-approved reports (from staff → manager → executive workflow)
+                    // 2. Line Manager submitted reports (direct manager → executive workflow)
+                    if (report.Status != ReportStatus.ManagerApproved && report.Status != ReportStatus.Submitted)
+                        return ServiceResultDto.ErrorResult("Report must be either approved by Line Manager or submitted by Line Manager");
+
+                    // Check if this is a Line Manager submitted report (Submitted status + creator is LineManager)
+                    if (report.Status == ReportStatus.Submitted && report.Creator.Role != UserRole.LineManager)
+                        return ServiceResultDto.ErrorResult("Only Line Manager submitted reports can be approved directly by Executive");
 
                     // Final approval - mark as completed
                     var success = await _reportRepository.UpdateReportStatusAsync(reportId, ReportStatus.Completed, userId);
@@ -367,13 +373,16 @@ namespace ProjectControlsReportingTool.API.Business.Services
                     );
 
                 case UserRole.Executive:
-                    // Executives can see:
+                    // Executives can see ALL reports from ALL departments that need executive attention:
                     // 1. Their own reports
-                    // 2. All reports that have been approved by line managers (need executive approval)
-                    // 3. All completed reports for oversight
+                    // 2. Reports approved by line managers (ManagerApproved status)
+                    // 3. Reports submitted by line managers (Submitted status + creator is LineManager)
+                    // 4. Reports in executive review
+                    // 5. Completed reports for oversight
                     return reports.Where(r =>
                         r.CreatedBy == userId ||
                         r.Status == ReportStatus.ManagerApproved ||
+                        (r.Status == ReportStatus.Submitted && r.Creator.Role == UserRole.LineManager) ||
                         r.Status == ReportStatus.ExecutiveReview ||
                         r.Status == ReportStatus.Completed
                     );
@@ -402,13 +411,18 @@ namespace ProjectControlsReportingTool.API.Business.Services
                 if (report.Status != ReportStatus.Draft)
                     return ServiceResultDto.ErrorResult("Only draft reports can be submitted");
 
-                // Update report status to submitted and assign to line manager
-                var success = await _reportRepository.UpdateReportStatusAsync(reportId, ReportStatus.Submitted, userId);
+                // Determine target status based on submitter role
+                var targetStatus = userRole == UserRole.GeneralStaff 
+                    ? ReportStatus.Submitted        // Staff → Line Manager review
+                    : ReportStatus.ManagerApproved; // Line Manager → Executive review
+
+                var success = await _reportRepository.UpdateReportStatusAsync(reportId, targetStatus, userId);
                 if (success)
                 {
+                    var reviewerType = userRole == UserRole.GeneralStaff ? "Line Manager" : "Executive";
                     await _auditLogRepository.LogActionAsync(AuditAction.Submitted, userId, reportId, 
-                        $"Report submitted for manager review: {dto.Comments}");
-                    return ServiceResultDto.SuccessResult("Report submitted to Line Manager for review");
+                        $"Report submitted for {reviewerType} review: {dto.Comments}");
+                    return ServiceResultDto.SuccessResult($"Report submitted to {reviewerType} for review");
                 }
 
                 return ServiceResultDto.ErrorResult("Failed to submit report");

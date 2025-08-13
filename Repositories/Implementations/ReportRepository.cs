@@ -144,20 +144,12 @@ namespace ProjectControlsReportingTool.API.Repositories.Implementations
 
         public async Task<Report?> GetWithDetailsAsync(Guid reportId)
         {
-            var parameters = new[]
-            {
-                new SqlParameter("@ReportId", reportId)
-            };
-
-            var reports = await _context.Reports
-                .FromSqlRaw("EXEC GetReportDetails @ReportId", parameters)
+            return await _context.Reports
                 .Include(r => r.Creator)
                 .Include(r => r.RejectedByUser)
                 .Include(r => r.Signatures.Where(s => s.IsActive))
                 .Include(r => r.Attachments.Where(a => a.IsActive))
-                .ToListAsync();
-
-            return reports.FirstOrDefault();
+                .FirstOrDefaultAsync(r => r.Id == reportId);
         }
 
         public async Task<string> GenerateReportNumberAsync(Department department)
@@ -435,6 +427,12 @@ namespace ProjectControlsReportingTool.API.Repositories.Implementations
             return await _dbSet
                 .Include(r => r.Creator)
                 .ToListAsync();
+        }
+
+        // Override GetByIdAsync to include Creator navigation property
+        public override async Task<Report?> GetByIdAsync(Guid id)
+        {
+            return await GetWithDetailsAsync(id);
         }
     }
 }
