@@ -455,16 +455,25 @@ namespace ProjectControlsReportingTool.API.Repositories.Implementations
                 new SqlParameter("@PageSize", 100)
             };
 
-            return await _context.Reports
+            var reportIds = await _context.Reports
                 .FromSqlRaw("EXEC SearchReports @SearchTerm, @Department, @Status, @FromDate, @ToDate, @Page, @PageSize", parameters)
+                .Select(r => r.Id)
+                .ToListAsync();
+
+            // Load the full report objects with navigation properties
+            return await _dbSet
+                .Where(r => reportIds.Contains(r.Id))
+                .Include(r => r.Creator)
+                .Include(r => r.Signatures.Where(s => s.IsActive))
                 .ToListAsync();
         }
 
-        // Override GetAllAsync to include Creator navigation property
+        // Override GetAllAsync to include Creator and Signatures navigation properties
         public override async Task<IEnumerable<Report>> GetAllAsync()
         {
             return await _dbSet
                 .Include(r => r.Creator)
+                .Include(r => r.Signatures.Where(s => s.IsActive))
                 .ToListAsync();
         }
 

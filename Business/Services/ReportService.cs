@@ -380,7 +380,7 @@ namespace ProjectControlsReportingTool.API.Business.Services
                     // Line managers can see:
                     // 1. Their own reports
                     // 2. Reports from their department that are submitted and need their approval
-                    // 3. Reports they have already approved
+                    // 3. Reports they have already approved/reviewed (regardless of current status)
                     return reports.Where(r =>
                         r.CreatedBy == userId ||
                         (r.Department == userDepartment && (
@@ -389,7 +389,9 @@ namespace ProjectControlsReportingTool.API.Business.Services
                             r.Status == ReportStatus.ManagerApproved ||
                             r.Status == ReportStatus.ExecutiveReview ||
                             r.Status == ReportStatus.Completed
-                        ))
+                        )) ||
+                        // Include reports that this manager has previously signed/reviewed
+                        r.Signatures.Any(s => s.UserId == userId && s.SignatureType == SignatureType.ManagerSignature)
                     );
 
                 case UserRole.Executive:
