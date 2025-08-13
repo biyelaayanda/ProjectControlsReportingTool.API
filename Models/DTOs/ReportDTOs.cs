@@ -61,6 +61,7 @@ namespace ProjectControlsReportingTool.API.Models.DTOs
         public string StatusName { get; set; } = string.Empty;
         public Guid CreatedBy { get; set; }
         public string CreatorName { get; set; } = string.Empty;
+        public UserRole CreatorRole { get; set; }
         public DateTime CreatedDate { get; set; }
         public DateTime LastModifiedDate { get; set; }
         public DateTime? SubmittedDate { get; set; }
@@ -88,6 +89,7 @@ namespace ProjectControlsReportingTool.API.Models.DTOs
         public ReportStatus Status { get; set; }
         public string StatusName { get; set; } = string.Empty;
         public string CreatorName { get; set; } = string.Empty;
+        public UserRole CreatorRole { get; set; }
         public DateTime CreatedDate { get; set; }
         public DateTime LastModifiedDate { get; set; }
         public string? ReportNumber { get; set; }

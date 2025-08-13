@@ -26,6 +26,7 @@ namespace ProjectControlsReportingTool.API.Business.Mappings
             // Report mappings
             CreateMap<Report, ReportDto>()
                 .ForMember(dest => dest.CreatorName, opt => opt.MapFrom(src => $"{src.Creator.FirstName} {src.Creator.LastName}"))
+                .ForMember(dest => dest.CreatorRole, opt => opt.MapFrom(src => src.Creator.Role))
                 .ForMember(dest => dest.StatusName, opt => opt.MapFrom(src => src.Status.ToString()))
                 .ForMember(dest => dest.DepartmentName, opt => opt.MapFrom(src => GetDepartmentName(src.Department)))
                 .ForMember(dest => dest.RejectedByName, opt => opt.MapFrom(src => src.RejectedByUser != null ? $"{src.RejectedByUser.FirstName} {src.RejectedByUser.LastName}" : null))
@@ -35,6 +36,7 @@ namespace ProjectControlsReportingTool.API.Business.Mappings
 
             CreateMap<Report, ReportSummaryDto>()
                 .ForMember(dest => dest.CreatorName, opt => opt.MapFrom(src => $"{src.Creator.FirstName} {src.Creator.LastName}"))
+                .ForMember(dest => dest.CreatorRole, opt => opt.MapFrom(src => src.Creator.Role))
                 .ForMember(dest => dest.StatusName, opt => opt.MapFrom(src => src.Status.ToString()))
                 .ForMember(dest => dest.DepartmentName, opt => opt.MapFrom(src => GetDepartmentName(src.Department)));
 
