@@ -18,5 +18,6 @@ namespace ProjectControlsReportingTool.API.Business.Interfaces
         Task<IEnumerable<ReportSummaryDto>> GetUserReportsAsync(Guid userId);
         Task<IEnumerable<ReportSummaryDto>> GetTeamReportsAsync(Guid managerId, Department department);
         Task<IEnumerable<ReportSummaryDto>> GetExecutiveReportsAsync();
+        Task<ReportAttachment?> GetAttachmentAsync(Guid reportId, Guid attachmentId, Guid userId);
     }
 }

@@ -148,6 +148,67 @@ namespace ProjectControlsReportingTool.API.Controllers
             return Ok(reports);
         }
 
+        [HttpGet("{reportId}/attachments/{attachmentId}/download")]
+        public async Task<IActionResult> DownloadAttachment(Guid reportId, Guid attachmentId)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var attachment = await _reportService.GetAttachmentAsync(reportId, attachmentId, userId);
+                
+                if (attachment == null)
+                    return NotFound("Attachment not found");
+
+                if (!System.IO.File.Exists(attachment.FilePath))
+                    return NotFound("File not found on disk");
+
+                var fileBytes = await System.IO.File.ReadAllBytesAsync(attachment.FilePath);
+                var contentType = attachment.ContentType ?? "application/octet-stream";
+                
+                return File(fileBytes, contentType, attachment.OriginalFileName);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid("You don't have permission to download this attachment");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error downloading file: {ex.Message}");
+            }
+        }
+
+        [HttpGet("{reportId}/attachments/{attachmentId}/preview")]
+        public async Task<IActionResult> PreviewAttachment(Guid reportId, Guid attachmentId)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var attachment = await _reportService.GetAttachmentAsync(reportId, attachmentId, userId);
+                
+                if (attachment == null)
+                    return NotFound("Attachment not found");
+
+                if (!System.IO.File.Exists(attachment.FilePath))
+                    return NotFound("File not found on disk");
+
+                var fileBytes = await System.IO.File.ReadAllBytesAsync(attachment.FilePath);
+                var contentType = attachment.ContentType ?? "application/octet-stream";
+                
+                // Set headers for inline display (preview)
+                Response.Headers["Content-Disposition"] = $"inline; filename=\"{attachment.OriginalFileName}\"";
+                
+                return File(fileBytes, contentType);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid("You don't have permission to preview this attachment");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error previewing file: {ex.Message}");
+            }
+        }
+
         private Guid GetCurrentUserId()
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;

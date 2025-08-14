@@ -515,6 +515,44 @@ namespace ProjectControlsReportingTool.API.Business.Services
             }
         }
 
+        public async Task<ReportAttachment?> GetAttachmentAsync(Guid reportId, Guid attachmentId, Guid userId)
+        {
+            try
+            {
+                // First check if the user has access to the report
+                var report = await _reportRepository.GetByIdAsync(reportId);
+                if (report == null)
+                    return null;
+
+                // Check if user has permission to access this report
+                // Users can access:
+                // 1. Reports they created
+                // 2. Reports in their department (if they're line manager or executive)
+                // 3. All reports (if they're executive)
+                var user = await _userRepository.GetByIdAsync(userId);
+                if (user == null)
+                    return null;
+
+                bool hasAccess = report.CreatedBy == userId || // Creator
+                                user.Role == UserRole.Executive || // Executive can see all
+                                (user.Role == UserRole.LineManager && report.Department == user.Department); // Line manager for same department
+
+                if (!hasAccess)
+                    throw new UnauthorizedAccessException("You don't have permission to access this report's attachments");
+
+                // Get the specific attachment
+                var attachment = await _context.ReportAttachments
+                    .FirstOrDefaultAsync(a => a.Id == attachmentId && a.ReportId == reportId && a.IsActive);
+
+                return attachment;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting attachment {AttachmentId} for report {ReportId}", attachmentId, reportId);
+                throw;
+            }
+        }
+
         private async Task ProcessFileAttachmentsAsync(Guid reportId, List<IFormFile> attachments, Guid userId)
         {
             try
