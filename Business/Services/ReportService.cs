@@ -3,7 +3,9 @@ using ProjectControlsReportingTool.API.Repositories.Interfaces;
 using ProjectControlsReportingTool.API.Models.DTOs;
 using ProjectControlsReportingTool.API.Models.Entities;
 using ProjectControlsReportingTool.API.Models.Enums;
+using ProjectControlsReportingTool.API.Data;
 using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 
 namespace ProjectControlsReportingTool.API.Business.Services
 {
@@ -12,21 +14,27 @@ namespace ProjectControlsReportingTool.API.Business.Services
         private readonly IReportRepository _reportRepository;
         private readonly IUserRepository _userRepository;
         private readonly IAuditLogRepository _auditLogRepository;
+        private readonly ApplicationDbContext _context;
         private readonly IMapper _mapper;
         private readonly ILogger<ReportService> _logger;
+        private readonly IWebHostEnvironment _environment;
 
         public ReportService(
             IReportRepository reportRepository,
             IUserRepository userRepository,
             IAuditLogRepository auditLogRepository,
+            ApplicationDbContext context,
             IMapper mapper,
-            ILogger<ReportService> logger)
+            ILogger<ReportService> logger,
+            IWebHostEnvironment environment)
         {
             _reportRepository = reportRepository;
             _userRepository = userRepository;
             _auditLogRepository = auditLogRepository;
+            _context = context;
             _mapper = mapper;
             _logger = logger;
+            _environment = environment;
         }
 
         public async Task<ReportDto?> CreateReportAsync(CreateReportDto dto, Guid userId)
@@ -61,11 +69,19 @@ namespace ProjectControlsReportingTool.API.Business.Services
 
                 var createdReport = await _reportRepository.CreateReportAsync(report);
 
+                // Handle file attachments if any
+                if (dto.Attachments != null && dto.Attachments.Count > 0)
+                {
+                    await ProcessFileAttachmentsAsync(createdReport.Id, dto.Attachments, userId);
+                }
+
                 // Log the action
                 await _auditLogRepository.LogActionAsync(AuditAction.Created, userId, createdReport.Id, 
                     $"Report created: {createdReport.Title}");
 
-                return _mapper.Map<ReportDto>(createdReport);
+                // Return the report with attachments
+                var reportWithAttachments = await GetReportWithAttachmentsAsync(createdReport.Id);
+                return _mapper.Map<ReportDto>(reportWithAttachments);
             }
             catch (Exception ex)
             {
@@ -497,6 +513,67 @@ namespace ProjectControlsReportingTool.API.Business.Services
                 _logger.LogError(ex, "Error submitting report {ReportId}", reportId);
                 return ServiceResultDto.ErrorResult("An error occurred");
             }
+        }
+
+        private async Task ProcessFileAttachmentsAsync(Guid reportId, List<IFormFile> attachments, Guid userId)
+        {
+            try
+            {
+                // Create uploads directory if it doesn't exist
+                var uploadsPath = Path.Combine(_environment.ContentRootPath, "uploads", "reports", reportId.ToString());
+                if (!Directory.Exists(uploadsPath))
+                {
+                    Directory.CreateDirectory(uploadsPath);
+                }
+
+                foreach (var attachment in attachments)
+                {
+                    if (attachment.Length > 0)
+                    {
+                        // Generate unique filename
+                        var fileExtension = Path.GetExtension(attachment.FileName);
+                        var uniqueFileName = $"{Guid.NewGuid()}{fileExtension}";
+                        var filePath = Path.Combine(uploadsPath, uniqueFileName);
+
+                        // Save file to disk
+                        using (var stream = new FileStream(filePath, FileMode.Create))
+                        {
+                            await attachment.CopyToAsync(stream);
+                        }
+
+                        // Save attachment info to database
+                        var reportAttachment = new ReportAttachment
+                        {
+                            Id = Guid.NewGuid(),
+                            ReportId = reportId,
+                            FileName = uniqueFileName,
+                            OriginalFileName = attachment.FileName,
+                            FilePath = filePath,
+                            ContentType = attachment.ContentType,
+                            FileSize = attachment.Length,
+                            UploadedBy = userId,
+                            UploadedDate = DateTime.UtcNow,
+                            IsActive = true
+                        };
+
+                        _context.ReportAttachments.Add(reportAttachment);
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing file attachments for report {ReportId}", reportId);
+                throw;
+            }
+        }
+
+        private async Task<Report?> GetReportWithAttachmentsAsync(Guid reportId)
+        {
+            return await _context.Reports
+                .Include(r => r.Attachments)
+                .FirstOrDefaultAsync(r => r.Id == reportId);
         }
     }
 }

@@ -20,7 +20,7 @@ namespace ProjectControlsReportingTool.API.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateReport(CreateReportDto dto)
+        public async Task<IActionResult> CreateReport([FromForm] CreateReportDto dto)
         {
             var userId = GetCurrentUserId();
             var result = await _reportService.CreateReportAsync(dto, userId);

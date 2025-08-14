@@ -25,6 +25,9 @@ namespace ProjectControlsReportingTool.API.Models.DTOs
 
         [Required]
         public Department Department { get; set; }
+        
+        // File attachments support
+        public List<IFormFile>? Attachments { get; set; }
     }
 
     public class UpdateReportDto
