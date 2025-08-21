@@ -17,6 +17,9 @@ CREATE OR ALTER PROCEDURE [dbo].[CreateReport]
     @Title NVARCHAR(200),
     @Content NVARCHAR(MAX),
     @Description NVARCHAR(500) = NULL,
+    @Type NVARCHAR(100) = NULL,
+    @Priority NVARCHAR(20) = 'Medium',
+    @DueDate DATETIME2 = NULL,
     @CreatedBy UNIQUEIDENTIFIER,
     @Department INT,
     @ReportNumber NVARCHAR(50) = NULL
@@ -53,11 +56,11 @@ BEGIN
         END
         
         INSERT INTO Reports (
-            Id, Title, Content, Description, Status, CreatedBy, Department,
+            Id, Title, Content, Description, Type, Priority, DueDate, Status, CreatedBy, Department,
             CreatedDate, LastModifiedDate, ReportNumber
         )
         VALUES (
-            @Id, @Title, @Content, @Description, 1, -- Draft status
+            @Id, @Title, @Content, @Description, @Type, @Priority, @DueDate, 1, -- Draft status
             @CreatedBy, @Department, GETUTCDATE(), GETUTCDATE(), @ReportNumber
         );
         
@@ -65,7 +68,7 @@ BEGIN
         
         -- Return the created report
         SELECT 
-            Id, Title, Content, Description, Status, CreatedBy, Department,
+            Id, Title, Content, Description, Type, Priority, DueDate, Status, CreatedBy, Department,
             CreatedDate, LastModifiedDate, ReportNumber
         FROM Reports 
         WHERE Id = @Id;
@@ -365,7 +368,7 @@ GO
 
 -- =============================================
 -- SP: RejectReport
--- Description: Reject a report
+-- Description: Reject a report with role-specific rejection status
 -- =============================================
 CREATE OR ALTER PROCEDURE [dbo].[RejectReport]
     @ReportId UNIQUEIDENTIFIER,
@@ -378,21 +381,42 @@ BEGIN
     BEGIN TRY
         BEGIN TRANSACTION
         
+        -- Determine rejection status based on rejector's role
+        DECLARE @RejectionStatus INT
+        DECLARE @UserRole INT
+        
+        SELECT @UserRole = Role FROM Users WHERE Id = @RejectedBy
+        
+        -- Set appropriate rejection status based on user role
+        IF @UserRole = 2 -- LineManager
+            SET @RejectionStatus = 8 -- ManagerRejected
+        ELSE IF @UserRole = 3 -- Executive
+            SET @RejectionStatus = 9 -- ExecutiveRejected
+        ELSE
+            SET @RejectionStatus = 7 -- Generic Rejected
+        
         -- Update report to rejected status
         UPDATE Reports 
         SET 
-            Status = 7, -- Rejected
+            Status = @RejectionStatus,
             RejectionReason = @Reason,
             RejectedBy = @RejectedBy,
             RejectedDate = GETUTCDATE(),
             LastModifiedDate = GETUTCDATE()
         WHERE Id = @ReportId;
         
-        -- Log audit trail
+        -- Log audit trail with role information
+        DECLARE @RoleText NVARCHAR(50)
+        SET @RoleText = CASE @UserRole
+            WHEN 2 THEN 'Line Manager'
+            WHEN 3 THEN 'Executive'
+            ELSE 'Unknown Role'
+        END
+        
         INSERT INTO AuditLogs (Id, UserId, ReportId, Action, Details, Timestamp)
         VALUES (
             NEWID(), @RejectedBy, @ReportId, 2, -- Updated action
-            CONCAT('Report rejected. Reason: ', @Reason),
+            CONCAT('Report rejected by ', @RoleText, '. Reason: ', @Reason),
             GETUTCDATE()
         );
         

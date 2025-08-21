@@ -209,6 +209,69 @@ namespace ProjectControlsReportingTool.API.Controllers
             }
         }
 
+        [HttpPost("{id}/approval-documents")]
+        public async Task<IActionResult> UploadApprovalDocuments(Guid id, [FromForm] IFormFileCollection files, [FromForm] string? description = null)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var userRole = GetCurrentUserRole();
+
+                if (files == null || files.Count == 0)
+                {
+                    return BadRequest("No files provided");
+                }
+
+                var result = await _reportService.UploadApprovalDocumentsAsync(id, files, userId, userRole, description);
+
+                if (result.Success)
+                {
+                    return Ok(result);
+                }
+
+                return BadRequest(result.ErrorMessage);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error uploading approval documents: {ex.Message}");
+            }
+        }
+
+        [HttpGet("{id}/attachments")]
+        public async Task<IActionResult> GetReportAttachments(Guid id, [FromQuery] ApprovalStage? stage = null)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var userRole = GetCurrentUserRole();
+
+                var attachments = await _reportService.GetReportAttachmentsByStageAsync(id, stage, userId, userRole);
+
+                // Group attachments by approval stage for better frontend handling
+                var groupedAttachments = attachments
+                    .GroupBy(a => a.ApprovalStage)
+                    .ToDictionary(
+                        g => g.Key.ToString(),
+                        g => g.OrderBy(a => a.UploadedDate).ToList()
+                    );
+
+                return Ok(new 
+                { 
+                    reportId = id,
+                    attachmentsByStage = groupedAttachments,
+                    totalAttachments = attachments.Count()
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error retrieving attachments: {ex.Message}");
+            }
+        }
+
         private Guid GetCurrentUserId()
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;

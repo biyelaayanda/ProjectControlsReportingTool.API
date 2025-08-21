@@ -122,10 +122,17 @@ namespace ProjectControlsReportingTool.API.Models.DTOs
         public string FileName { get; set; } = string.Empty;
         public string OriginalFileName { get; set; } = string.Empty;
         public string? ContentType { get; set; }
+        public string? MimeType => ContentType;
         public long FileSize { get; set; }
         public DateTime UploadedDate { get; set; }
         public string UploadedByName { get; set; } = string.Empty;
         public string? Description { get; set; }
+        public Guid UploadedBy { get; set; }
+        public bool IsActive { get; set; } = true;
+        public ApprovalStage ApprovalStage { get; set; }
+        public string ApprovalStageName { get; set; } = string.Empty;
+        public UserRole UploadedByRole { get; set; }
+        public string UploadedByRoleName { get; set; } = string.Empty;
     }
 
     public class ApproveReportDto

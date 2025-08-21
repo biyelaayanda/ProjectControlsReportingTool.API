@@ -74,6 +74,15 @@ namespace ProjectControlsReportingTool.API.Models.Entities
         [Required]
         public Guid UploadedBy { get; set; }
 
+        [Required]
+        public ApprovalStage ApprovalStage { get; set; } = ApprovalStage.Initial;
+
+        [Required]
+        public UserRole UploadedByRole { get; set; } = UserRole.GeneralStaff;
+
+        [StringLength(200)]
+        public string? UploadedByName { get; set; }
+
         public bool IsActive { get; set; } = true;
 
         [StringLength(500)]
@@ -85,6 +94,16 @@ namespace ProjectControlsReportingTool.API.Models.Entities
 
         [ForeignKey("UploadedBy")]
         public virtual User UploadedByUser { get; set; } = null!;
+
+        // Computed properties
+        [NotMapped]
+        public string ApprovalStageName => ApprovalStage.ToString();
+
+        [NotMapped]
+        public string UploadedByRoleName => UploadedByRole.ToString();
+
+        [NotMapped]
+        public string? MimeType => ContentType;
     }
 
     [Table("AuditLogs")]

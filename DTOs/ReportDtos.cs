@@ -113,10 +113,15 @@ namespace ProjectControlsReportingTool.API.DTOs
         public string OriginalFileName { get; set; } = string.Empty;
         public long FileSize { get; set; }
         public string? ContentType { get; set; }
+        public string? MimeType => ContentType;
         public string? Description { get; set; }
         public Guid UploadedBy { get; set; }
         public string UploadedByName { get; set; } = string.Empty;
         public DateTime UploadedDate { get; set; }
         public bool IsActive { get; set; }
+        public ApprovalStage ApprovalStage { get; set; }
+        public string ApprovalStageName { get; set; } = string.Empty;
+        public UserRole UploadedByRole { get; set; }
+        public string UploadedByRoleName { get; set; } = string.Empty;
     }
 }

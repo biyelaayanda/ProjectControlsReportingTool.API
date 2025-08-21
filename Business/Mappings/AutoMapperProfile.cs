@@ -56,7 +56,11 @@ namespace ProjectControlsReportingTool.API.Business.Mappings
 
             // Report Attachment mappings
             CreateMap<ReportAttachment, ReportAttachmentDto>()
-                .ForMember(dest => dest.UploadedByName, opt => opt.MapFrom(src => $"{src.UploadedByUser.FirstName} {src.UploadedByUser.LastName}"));
+                .ForMember(dest => dest.UploadedByName, opt => opt.MapFrom(src => 
+                    !string.IsNullOrEmpty(src.UploadedByName) ? src.UploadedByName : 
+                    src.UploadedByUser != null ? $"{src.UploadedByUser.FirstName} {src.UploadedByUser.LastName}" : "Unknown"))
+                .ForMember(dest => dest.ApprovalStageName, opt => opt.MapFrom(src => src.ApprovalStage.ToString()))
+                .ForMember(dest => dest.UploadedByRoleName, opt => opt.MapFrom(src => src.UploadedByRole.ToString()));
         }
 
         private static string GetDepartmentName(Department department)

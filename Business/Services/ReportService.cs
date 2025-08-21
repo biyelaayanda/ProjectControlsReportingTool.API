@@ -72,7 +72,8 @@ namespace ProjectControlsReportingTool.API.Business.Services
                 // Handle file attachments if any
                 if (dto.Attachments != null && dto.Attachments.Count > 0)
                 {
-                    await ProcessFileAttachmentsAsync(createdReport.Id, dto.Attachments, userId);
+                    var uploaderName = $"{user.FirstName} {user.LastName}";
+                    await ProcessFileAttachmentsAsync(createdReport.Id, dto.Attachments, userId, ApprovalStage.Initial, user.Role, uploaderName);
                 }
 
                 // Log the action
@@ -553,7 +554,7 @@ namespace ProjectControlsReportingTool.API.Business.Services
             }
         }
 
-        private async Task ProcessFileAttachmentsAsync(Guid reportId, List<IFormFile> attachments, Guid userId)
+        private async Task ProcessFileAttachmentsAsync(Guid reportId, List<IFormFile> attachments, Guid userId, ApprovalStage approvalStage = ApprovalStage.Initial, UserRole userRole = UserRole.GeneralStaff, string? uploaderName = null)
         {
             try
             {
@@ -562,6 +563,13 @@ namespace ProjectControlsReportingTool.API.Business.Services
                 if (!Directory.Exists(uploadsPath))
                 {
                     Directory.CreateDirectory(uploadsPath);
+                }
+
+                // Get user name if not provided
+                if (string.IsNullOrEmpty(uploaderName))
+                {
+                    var user = await _userRepository.GetByIdAsync(userId);
+                    uploaderName = user != null ? $"{user.FirstName} {user.LastName}" : "Unknown User";
                 }
 
                 foreach (var attachment in attachments)
@@ -590,6 +598,9 @@ namespace ProjectControlsReportingTool.API.Business.Services
                             ContentType = attachment.ContentType,
                             FileSize = attachment.Length,
                             UploadedBy = userId,
+                            UploadedByName = uploaderName,
+                            UploadedByRole = userRole,
+                            ApprovalStage = approvalStage,
                             UploadedDate = DateTime.UtcNow,
                             IsActive = true
                         };
@@ -612,6 +623,137 @@ namespace ProjectControlsReportingTool.API.Business.Services
             return await _context.Reports
                 .Include(r => r.Attachments)
                 .FirstOrDefaultAsync(r => r.Id == reportId);
+        }
+
+        public async Task<ServiceResultDto> UploadApprovalDocumentsAsync(Guid reportId, IFormFileCollection files, Guid userId, UserRole userRole, string? description = null)
+        {
+            try
+            {
+                // Get the report to check its status and user permissions
+                var report = await _context.Reports
+                    .Include(r => r.Creator)
+                    .FirstOrDefaultAsync(r => r.Id == reportId);
+
+                if (report == null)
+                {
+                    return ServiceResultDto.ErrorResult("Report not found");
+                }
+
+                // Determine the approval stage based on user role and report status
+                ApprovalStage approvalStage;
+                bool canUpload = false;
+
+                switch (userRole)
+                {
+                    case UserRole.LineManager:
+                        canUpload = report.Status == ReportStatus.ManagerReview;
+                        approvalStage = ApprovalStage.ManagerReview;
+                        break;
+                    case UserRole.Executive:
+                        canUpload = report.Status == ReportStatus.ExecutiveReview;
+                        approvalStage = ApprovalStage.ExecutiveReview;
+                        break;
+                    default:
+                        return ServiceResultDto.ErrorResult("Only managers and executives can upload approval documents");
+                }
+
+                if (!canUpload)
+                {
+                    return ServiceResultDto.ErrorResult($"Cannot upload documents. Report status: {report.Status}");
+                }
+
+                // Convert IFormFileCollection to List<IFormFile>
+                var fileList = files.ToList();
+
+                // Get user name for tracking
+                var user = await _userRepository.GetByIdAsync(userId);
+                var uploaderName = user != null ? $"{user.FirstName} {user.LastName}" : "Unknown User";
+
+                // Process the file attachments with approval stage
+                await ProcessFileAttachmentsAsync(reportId, fileList, userId, approvalStage, userRole, uploaderName);
+
+                // Log the action
+                await _auditLogRepository.LogActionAsync(
+                    AuditAction.Uploaded, 
+                    userId, 
+                    reportId, 
+                    $"Uploaded {files.Count} document(s) during {approvalStage} stage"
+                );
+
+                return ServiceResultDto.SuccessResult($"Successfully uploaded {files.Count} document(s)");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error uploading approval documents for report {ReportId}", reportId);
+                return ServiceResultDto.ErrorResult("An error occurred while uploading documents");
+            }
+        }
+
+        public async Task<IEnumerable<ReportAttachmentDto>> GetReportAttachmentsByStageAsync(Guid reportId, ApprovalStage? stage, Guid userId, UserRole userRole)
+        {
+            try
+            {
+                // Check permissions to view this report
+                var report = await _context.Reports
+                    .Include(r => r.Creator)
+                    .FirstOrDefaultAsync(r => r.Id == reportId);
+
+                if (report == null)
+                {
+                    return Enumerable.Empty<ReportAttachmentDto>();
+                }
+
+                // Check access permissions (same logic as GetAttachmentAsync)
+                bool hasAccess = false;
+
+                switch (userRole)
+                {
+                    case UserRole.GeneralStaff:
+                        hasAccess = report.CreatedBy == userId;
+                        break;
+                    case UserRole.LineManager:
+                        hasAccess = report.CreatedBy == userId || report.Creator.Department == GetUserDepartment(userId);
+                        break;
+                    case UserRole.Executive:
+                        hasAccess = true; // Executives can see all reports
+                        break;
+                }
+
+                if (!hasAccess)
+                {
+                    return Enumerable.Empty<ReportAttachmentDto>();
+                }
+
+                // Get attachments filtered by stage
+                var query = _context.ReportAttachments
+                    .Include(a => a.UploadedByUser)
+                    .Where(a => a.ReportId == reportId && a.IsActive);
+
+                if (stage.HasValue)
+                {
+                    query = query.Where(a => a.ApprovalStage == stage.Value);
+                }
+
+                var attachments = await query
+                    .OrderBy(a => a.ApprovalStage)
+                    .ThenBy(a => a.UploadedDate)
+                    .ToListAsync();
+
+                return _mapper.Map<IEnumerable<ReportAttachmentDto>>(attachments);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting attachments by stage for report {ReportId}", reportId);
+                return Enumerable.Empty<ReportAttachmentDto>();
+            }
+        }
+
+        private Department GetUserDepartment(Guid userId)
+        {
+            // This is a placeholder - you might want to implement this properly
+            // For now, returning a default value
+            var user = _context.Users.FirstOrDefault(u => u.Id == userId);
+            return user?.Department ?? Department.ProjectSupport;
         }
     }
 }
