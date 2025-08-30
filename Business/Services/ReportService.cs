@@ -104,23 +104,23 @@ namespace ProjectControlsReportingTool.API.Business.Services
                 else
                 {
                     reports = await _reportRepository.GetAllAsync();
+                    
+                    // Apply filters only when not using search (search stored procedure handles these)
+                    if (filter.Status.HasValue)
+                        reports = reports.Where(r => r.Status == filter.Status.Value);
+
+                    if (filter.Department.HasValue && userRole == UserRole.GM)
+                        reports = reports.Where(r => r.Department == filter.Department.Value);
+
+                    if (filter.FromDate.HasValue)
+                        reports = reports.Where(r => r.CreatedDate >= filter.FromDate.Value);
+
+                    if (filter.ToDate.HasValue)
+                        reports = reports.Where(r => r.CreatedDate <= filter.ToDate.Value);
                 }
 
                 // Apply role-based filtering for workflow visibility
                 reports = ApplyRoleBasedFiltering(reports, userId, userRole, userDepartment);
-
-                // Apply additional filters
-                if (filter.Status.HasValue)
-                    reports = reports.Where(r => r.Status == filter.Status.Value);
-
-                if (filter.Department.HasValue && userRole == UserRole.GM)
-                    reports = reports.Where(r => r.Department == filter.Department.Value);
-
-                if (filter.FromDate.HasValue)
-                    reports = reports.Where(r => r.CreatedDate >= filter.FromDate.Value);
-
-                if (filter.ToDate.HasValue)
-                    reports = reports.Where(r => r.CreatedDate <= filter.ToDate.Value);
 
                 return _mapper.Map<IEnumerable<ReportSummaryDto>>(reports.OrderByDescending(r => r.LastModifiedDate));
             }
