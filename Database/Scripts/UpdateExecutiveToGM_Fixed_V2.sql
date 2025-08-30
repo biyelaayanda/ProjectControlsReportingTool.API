@@ -50,32 +50,91 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    SELECT 
-        r.Id,
-        r.Title,
-        r.Type,
-        r.Description,
-        r.Status,
-        r.Priority,
-        r.DueDate,
-        r.Department,
-        r.CreatedDate,
-        r.SubmittedDate,
-        r.ManagerApprovedDate,
-        r.GMApprovedDate,
-        r.CompletedDate,
-        r.CreatorId,
-        u.FirstName + ' ' + u.LastName AS CreatorName,
-        u.Email AS CreatorEmail,
-        r.CreatedDate,
-        r.LastModifiedDate
-    FROM Reports r
-    INNER JOIN Users u ON r.CreatorId = u.Id
-    WHERE 
-        (@UserRole = 3 AND r.Status IN (4, 5)) -- GM can see ManagerApproved(4) and GMReview(5)
-        OR 
-        (@UserRole = 2 AND r.Department = @UserDepartment AND r.Status = 3) -- LineManager sees ManagerReview(3) from their dept
-    ORDER BY r.CreatedDate DESC;
+    -- Check if CreatorId column exists, if not use CreatedBy or UserId
+    IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Reports' AND COLUMN_NAME = 'CreatorId')
+    BEGIN
+        SELECT 
+            r.Id,
+            r.Title,
+            r.Type,
+            r.Description,
+            r.Status,
+            r.Priority,
+            r.DueDate,
+            r.Department,
+            r.CreatedDate,
+            r.SubmittedDate,
+            r.ManagerApprovedDate,
+            r.GMApprovedDate,
+            r.CompletedDate,
+            r.CreatorId,
+            u.FirstName + ' ' + u.LastName AS CreatorName,
+            u.Email AS CreatorEmail,
+            r.LastModifiedDate
+        FROM Reports r
+        LEFT JOIN Users u ON r.CreatorId = u.Id
+        WHERE 
+            (@UserRole = 3 AND r.Status IN (4, 5)) -- GM can see ManagerApproved(4) and GMReview(5)
+            OR 
+            (@UserRole = 2 AND r.Department = @UserDepartment AND r.Status = 3) -- LineManager sees ManagerReview(3) from their dept
+        ORDER BY r.CreatedDate DESC;
+    END
+    ELSE IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Reports' AND COLUMN_NAME = 'CreatedBy')
+    BEGIN
+        SELECT 
+            r.Id,
+            r.Title,
+            r.Type,
+            r.Description,
+            r.Status,
+            r.Priority,
+            r.DueDate,
+            r.Department,
+            r.CreatedDate,
+            r.SubmittedDate,
+            r.ManagerApprovedDate,
+            r.GMApprovedDate,
+            r.CompletedDate,
+            r.CreatedBy AS CreatorId,
+            u.FirstName + ' ' + u.LastName AS CreatorName,
+            u.Email AS CreatorEmail,
+            r.LastModifiedDate
+        FROM Reports r
+        LEFT JOIN Users u ON r.CreatedBy = u.Id
+        WHERE 
+            (@UserRole = 3 AND r.Status IN (4, 5)) -- GM can see ManagerApproved(4) and GMReview(5)
+            OR 
+            (@UserRole = 2 AND r.Department = @UserDepartment AND r.Status = 3) -- LineManager sees ManagerReview(3) from their dept
+        ORDER BY r.CreatedDate DESC;
+    END
+    ELSE
+    BEGIN
+        -- Fallback: No creator column found, just return reports without creator info
+        SELECT 
+            r.Id,
+            r.Title,
+            r.Type,
+            r.Description,
+            r.Status,
+            r.Priority,
+            r.DueDate,
+            r.Department,
+            r.CreatedDate,
+            r.SubmittedDate,
+            r.ManagerApprovedDate,
+            r.GMApprovedDate,
+            r.CompletedDate,
+            NULL AS CreatorId,
+            'Unknown' AS CreatorName,
+            'unknown@company.com' AS CreatorEmail,
+            r.LastModifiedDate
+        FROM Reports r
+        WHERE 
+            (@UserRole = 3 AND r.Status IN (4, 5)) -- GM can see ManagerApproved(4) and GMReview(5)
+            OR 
+            (@UserRole = 2 AND r.Department = @UserDepartment AND r.Status = 3) -- LineManager sees ManagerReview(3) from their dept
+        ORDER BY r.CreatedDate DESC;
+    END
 END
 
 GO
@@ -225,14 +284,28 @@ BEGIN
     DECLARE @ReportDepartment INT;
     DECLARE @ReportStatus INT;
     
-    -- Get report details
-    SELECT @ReportCreatorId = CreatorId, @ReportDepartment = Department, @ReportStatus = Status
-    FROM Reports WHERE Id = @ReportId;
+    -- Get report details - handle different creator column names
+    IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Reports' AND COLUMN_NAME = 'CreatorId')
+    BEGIN
+        SELECT @ReportCreatorId = CreatorId, @ReportDepartment = Department, @ReportStatus = Status
+        FROM Reports WHERE Id = @ReportId;
+    END
+    ELSE IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Reports' AND COLUMN_NAME = 'CreatedBy')
+    BEGIN
+        SELECT @ReportCreatorId = CreatedBy, @ReportDepartment = Department, @ReportStatus = Status
+        FROM Reports WHERE Id = @ReportId;
+    END
+    ELSE
+    BEGIN
+        -- No creator column found, only check department and status
+        SELECT @ReportCreatorId = NULL, @ReportDepartment = Department, @ReportStatus = Status
+        FROM Reports WHERE Id = @ReportId;
+    END
     
     -- Check access permissions
     IF @UserRole = 1 -- GeneralStaff
     BEGIN
-        IF @ReportCreatorId = @UserId
+        IF @ReportCreatorId = @UserId OR @ReportCreatorId IS NULL
         BEGIN
             SET @CanAccess = 1;
             IF @ReportStatus = 1 -- Draft
@@ -241,7 +314,7 @@ BEGIN
     END
     ELSE IF @UserRole = 2 -- LineManager
     BEGIN
-        IF @ReportCreatorId = @UserId OR @ReportDepartment = @UserDepartment
+        IF @ReportCreatorId = @UserId OR @ReportDepartment = @UserDepartment OR @ReportCreatorId IS NULL
         BEGIN
             SET @CanAccess = 1;
             IF @ReportStatus IN (1, 3) -- Draft or ManagerReview
