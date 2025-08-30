@@ -113,7 +113,7 @@ namespace ProjectControlsReportingTool.API.Business.Services
                 if (filter.Status.HasValue)
                     reports = reports.Where(r => r.Status == filter.Status.Value);
 
-                if (filter.Department.HasValue && userRole == UserRole.Executive)
+                if (filter.Department.HasValue && userRole == UserRole.GM)
                     reports = reports.Where(r => r.Department == filter.Department.Value);
 
                 if (filter.FromDate.HasValue)
@@ -210,7 +210,7 @@ namespace ProjectControlsReportingTool.API.Business.Services
                 if (user == null)
                     return ServiceResultDto.ErrorResult("User not found");
 
-                if (userRole != UserRole.LineManager && userRole != UserRole.Executive)
+                if (userRole != UserRole.LineManager && userRole != UserRole.GM)
                     return ServiceResultDto.ErrorResult("Insufficient permissions");
 
                 var report = await _reportRepository.GetWithDetailsAsync(reportId);
@@ -227,33 +227,33 @@ namespace ProjectControlsReportingTool.API.Business.Services
                     if (report.Department != user.Department)
                         return ServiceResultDto.ErrorResult("You can only approve reports from your department");
 
-                    // Update to ManagerApproved and forward to Executive
+                    // Update to ManagerApproved and forward to GM
                     var success = await _reportRepository.UpdateReportStatusAsync(reportId, ReportStatus.ManagerApproved, userId);
                     if (success)
                     {
                         await _auditLogRepository.LogActionAsync(AuditAction.Approved, userId, reportId, 
                             $"Report approved by Line Manager: {dto.Comments}");
-                        return ServiceResultDto.SuccessResult("Report approved and forwarded to Executive");
+                        return ServiceResultDto.SuccessResult("Report approved and forwarded to GM");
                     }
                 }
-                else if (userRole == UserRole.Executive)
+                else if (userRole == UserRole.GM)
                 {
-                    // Executive can approve:
-                    // 1. Manager-approved reports (from staff → manager → executive workflow)
-                    // 2. Line Manager submitted reports (direct manager → executive workflow)
+                    // GM can approve:
+                    // 1. Manager-approved reports (from staff → manager → GM workflow)
+                    // 2. Line Manager submitted reports (direct manager → GM workflow)
                     if (report.Status != ReportStatus.ManagerApproved && report.Status != ReportStatus.Submitted)
                         return ServiceResultDto.ErrorResult("Report must be either approved by Line Manager or submitted by Line Manager");
 
                     // Check if this is a Line Manager submitted report (Submitted status + creator is LineManager)
                     if (report.Status == ReportStatus.Submitted && report.Creator.Role != UserRole.LineManager)
-                        return ServiceResultDto.ErrorResult("Only Line Manager submitted reports can be approved directly by Executive");
+                        return ServiceResultDto.ErrorResult("Only Line Manager submitted reports can be approved directly by GM");
 
                     // Final approval - mark as completed
                     var success = await _reportRepository.UpdateReportStatusAsync(reportId, ReportStatus.Completed, userId);
                     if (success)
                     {
                         await _auditLogRepository.LogActionAsync(AuditAction.Approved, userId, reportId, 
-                            $"Report given final approval by Executive: {dto.Comments}");
+                            $"Report given final approval by GM: {dto.Comments}");
                         return ServiceResultDto.SuccessResult("Report completed - final approval given");
                     }
                 }
@@ -280,7 +280,7 @@ namespace ProjectControlsReportingTool.API.Business.Services
                     return ServiceResultDto.ErrorResult("User not found");
                 }
 
-                if (userRole != UserRole.LineManager && userRole != UserRole.Executive)
+                if (userRole != UserRole.LineManager && userRole != UserRole.GM)
                 {
                     Console.WriteLine($"Insufficient permissions for user {userId} with role {userRole}");
                     return ServiceResultDto.ErrorResult("Insufficient permissions");
@@ -303,10 +303,10 @@ namespace ProjectControlsReportingTool.API.Business.Services
                     return ServiceResultDto.ErrorResult("Report must be in Submitted status for Line Manager to reject");
                 }
 
-                if (userRole == UserRole.Executive && report.Status != ReportStatus.ManagerApproved && report.Status != ReportStatus.Submitted && report.Status != ReportStatus.ExecutiveReview)
+                if (userRole == UserRole.GM && report.Status != ReportStatus.ManagerApproved && report.Status != ReportStatus.Submitted && report.Status != ReportStatus.GMReview)
                 {
-                    Console.WriteLine($"Executive cannot reject report with status {report.Status}");
-                    return ServiceResultDto.ErrorResult("Report must be Manager Approved, Executive Review, or Submitted (for manager-created reports) for Executive to reject");
+                    Console.WriteLine($"GM cannot reject report with status {report.Status}");
+                    return ServiceResultDto.ErrorResult("Report must be Manager Approved, GM Review, or Submitted (for manager-created reports) for GM to reject");
                 }
 
                 var success = await _reportRepository.RejectReportAsync(reportId, userId, dto.Reason);
@@ -343,12 +343,12 @@ namespace ProjectControlsReportingTool.API.Business.Services
                 if (report == null)
                     return ServiceResultDto.ErrorResult("Report not found");
 
-                // Only allow deletion if user is the creator and report is in draft/rejected status, or user is executive
-                if (userRole != UserRole.Executive && (report.CreatedBy != userId || 
+                // Only allow deletion if user is the creator and report is in draft/rejected status, or user is GM
+                if (userRole != UserRole.GM && (report.CreatedBy != userId || 
                     (report.Status != ReportStatus.Draft && 
                      report.Status != ReportStatus.Rejected && 
                      report.Status != ReportStatus.ManagerRejected && 
-                     report.Status != ReportStatus.ExecutiveRejected)))
+                     report.Status != ReportStatus.GMRejected)))
                     return ServiceResultDto.ErrorResult("Cannot delete this report");
 
                 await _reportRepository.DeleteAsync(reportId);
@@ -370,7 +370,7 @@ namespace ProjectControlsReportingTool.API.Business.Services
                 IEnumerable<Report> reports = userRole switch
                 {
                     UserRole.LineManager => await _reportRepository.GetPendingApprovalsForManagerAsync(userDepartment),
-                    UserRole.Executive => await _reportRepository.GetPendingApprovalsForExecutiveAsync(),
+                    UserRole.GM => await _reportRepository.GetPendingApprovalsForGMAsync(),
                     _ => new List<Report>()
                 };
 
@@ -394,6 +394,20 @@ namespace ProjectControlsReportingTool.API.Business.Services
             {
                 _logger.LogError(ex, "Error getting reports for user {UserId}", userId);
                 return new List<ReportSummaryDto>();
+            }
+        }
+
+        public async Task<IEnumerable<ReportSummaryDto>> GetGMReportsAsync()
+        {
+            try
+            {
+                var reports = await _reportRepository.GetAllAsync();
+                return _mapper.Map<IEnumerable<ReportSummaryDto>>(reports.OrderByDescending(r => r.LastModifiedDate));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting GM reports");
+                throw;
             }
         }
 
@@ -444,25 +458,25 @@ namespace ProjectControlsReportingTool.API.Business.Services
                             r.Status == ReportStatus.Submitted ||
                             r.Status == ReportStatus.ManagerReview ||
                             r.Status == ReportStatus.ManagerApproved ||
-                            r.Status == ReportStatus.ExecutiveReview ||
+                            r.Status == ReportStatus.GMReview ||
                             r.Status == ReportStatus.Completed
                         )) ||
                         // Include reports that this manager has previously signed/reviewed
                         r.Signatures.Any(s => s.UserId == userId && s.SignatureType == SignatureType.ManagerSignature)
                     );
 
-                case UserRole.Executive:
-                    // Executives can see ALL reports from ALL departments that need executive attention:
+                case UserRole.GM:
+                    // GMs can see ALL reports from ALL departments that need GM attention:
                     // 1. Their own reports
                     // 2. Reports approved by line managers (ManagerApproved status)
                     // 3. Reports submitted by line managers (Submitted status + creator is LineManager)
-                    // 4. Reports in executive review
+                    // 4. Reports in GM review
                     // 5. Completed reports for oversight
                     return reports.Where(r =>
                         r.CreatedBy == userId ||
                         r.Status == ReportStatus.ManagerApproved ||
                         (r.Status == ReportStatus.Submitted && r.Creator.Role == UserRole.LineManager) ||
-                        r.Status == ReportStatus.ExecutiveReview ||
+                        r.Status == ReportStatus.GMReview ||
                         r.Status == ReportStatus.Completed
                     );
 
@@ -476,7 +490,7 @@ namespace ProjectControlsReportingTool.API.Business.Services
             try
             {
                 // Only staff and line managers can submit reports
-                // Staff submit to line managers, Line managers submit to executives
+                // Staff submit to line managers, Line managers submit to GMs
                 if (userRole != UserRole.GeneralStaff && userRole != UserRole.LineManager)
                     return ServiceResultDto.ErrorResult("Only staff members and line managers can submit reports");
 
@@ -490,18 +504,18 @@ namespace ProjectControlsReportingTool.API.Business.Services
                 if (report.Status != ReportStatus.Draft && 
                     report.Status != ReportStatus.Rejected && 
                     report.Status != ReportStatus.ManagerRejected && 
-                    report.Status != ReportStatus.ExecutiveRejected)
+                    report.Status != ReportStatus.GMRejected)
                     return ServiceResultDto.ErrorResult("Only draft or rejected reports can be submitted");
 
                 // Determine target status based on submitter role
                 var targetStatus = userRole == UserRole.GeneralStaff 
                     ? ReportStatus.Submitted        // Staff → Line Manager review
-                    : ReportStatus.Submitted;       // Line Manager → Executive review (changed from ManagerApproved)
+                    : ReportStatus.Submitted;       // Line Manager → GM review (changed from ManagerApproved)
 
                 var success = await _reportRepository.UpdateReportStatusAsync(reportId, targetStatus, userId);
                 if (success)
                 {
-                    var reviewerType = userRole == UserRole.GeneralStaff ? "Line Manager" : "Executive";
+                    var reviewerType = userRole == UserRole.GeneralStaff ? "Line Manager" : "GM";
                     await _auditLogRepository.LogActionAsync(AuditAction.Submitted, userId, reportId, 
                         $"Report submitted for {reviewerType} review: {dto.Comments}");
                     return ServiceResultDto.SuccessResult($"Report submitted to {reviewerType} for review");
@@ -528,14 +542,14 @@ namespace ProjectControlsReportingTool.API.Business.Services
                 // Check if user has permission to access this report
                 // Users can access:
                 // 1. Reports they created
-                // 2. Reports in their department (if they're line manager or executive)
-                // 3. All reports (if they're executive)
+                // 2. Reports in their department (if they're line manager or GM)
+                // 3. All reports (if they're GM)
                 var user = await _userRepository.GetByIdAsync(userId);
                 if (user == null)
                     return null;
 
                 bool hasAccess = report.CreatedBy == userId || // Creator
-                                user.Role == UserRole.Executive || // Executive can see all
+                                user.Role == UserRole.GM || // GM can see all
                                 (user.Role == UserRole.LineManager && report.Department == user.Department); // Line manager for same department
 
                 if (!hasAccess)
@@ -669,9 +683,9 @@ namespace ProjectControlsReportingTool.API.Business.Services
                         canUpload = true;
                         approvalStage = ApprovalStage.ManagerReview;
                         break;
-                    case UserRole.Executive:
-                        // Executives can upload when report is manager-approved or submitted by line managers
-                        _logger.LogInformation($"Executive upload check: ReportStatus={report.Status}, CreatorRole={report.Creator?.Role}");
+                    case UserRole.GM:
+                        // GMs can upload when report is manager-approved or submitted by line managers
+                        _logger.LogInformation($"GM upload check: ReportStatus={report.Status}, CreatorRole={report.Creator?.Role}");
                         
                         if (report.Status == ReportStatus.ManagerApproved)
                         {
@@ -686,10 +700,10 @@ namespace ProjectControlsReportingTool.API.Business.Services
                             return ServiceResultDto.ErrorResult($"Cannot upload documents. Report status: {report.Status}, Creator role: {report.Creator?.Role}");
                         }
                         
-                        approvalStage = ApprovalStage.ExecutiveReview;
+                        approvalStage = ApprovalStage.GMReview;
                         break;
                     default:
-                        return ServiceResultDto.ErrorResult("Only managers and executives can upload approval documents");
+                        return ServiceResultDto.ErrorResult("Only managers and GMs can upload approval documents");
                 }
 
                 if (!canUpload)
@@ -749,8 +763,8 @@ namespace ProjectControlsReportingTool.API.Business.Services
                     case UserRole.LineManager:
                         hasAccess = report.CreatedBy == userId || report.Creator.Department == GetUserDepartment(userId);
                         break;
-                    case UserRole.Executive:
-                        hasAccess = true; // Executives can see all reports
+                    case UserRole.GM:
+                        hasAccess = true; // GMs can see all reports
                         break;
                 }
 

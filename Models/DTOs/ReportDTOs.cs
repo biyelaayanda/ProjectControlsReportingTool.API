@@ -69,7 +69,7 @@ namespace ProjectControlsReportingTool.API.Models.DTOs
         public DateTime LastModifiedDate { get; set; }
         public DateTime? SubmittedDate { get; set; }
         public DateTime? ManagerApprovedDate { get; set; }
-        public DateTime? ExecutiveApprovedDate { get; set; }
+        public DateTime? GMApprovedDate { get; set; }
         public DateTime? CompletedDate { get; set; }
         public string? RejectionReason { get; set; }
         public string? RejectedByName { get; set; }

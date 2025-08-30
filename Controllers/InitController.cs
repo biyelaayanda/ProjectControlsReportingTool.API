@@ -49,7 +49,7 @@ namespace ProjectControlsReportingTool.API.Controllers
                     Password = request.Password,
                     FirstName = request.FirstName,
                     LastName = request.LastName,
-                    Role = UserRole.Executive,
+                    Role = UserRole.GM,
                     Department = Department.ProjectSupport,
                     JobTitle = "System Administrator"
                 };

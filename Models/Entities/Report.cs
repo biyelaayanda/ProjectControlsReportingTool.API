@@ -43,7 +43,7 @@ namespace ProjectControlsReportingTool.API.Models.Entities
 
         public DateTime? ManagerApprovedDate { get; set; }
 
-        public DateTime? ExecutiveApprovedDate { get; set; }
+        public DateTime? GMApprovedDate { get; set; }
 
         public DateTime? CompletedDate { get; set; }
 

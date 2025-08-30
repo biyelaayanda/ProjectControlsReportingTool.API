@@ -105,9 +105,9 @@ namespace ProjectControlsReportingTool.API.Repositories.Implementations
                         .FromSqlRaw("EXEC GetPendingApprovalsForManager @Department", parameters)
                         .ToListAsync();
 
-                case UserRole.Executive:
+                case UserRole.GM:
                     return await _context.Reports
-                        .FromSqlRaw("EXEC GetPendingApprovalsForExecutive")
+                        .FromSqlRaw("EXEC GetPendingApprovalsForGM")
                         .ToListAsync();
 
                 default:
@@ -121,7 +121,7 @@ namespace ProjectControlsReportingTool.API.Repositories.Implementations
 
             switch (userRole)
             {
-                case UserRole.Executive:
+                case UserRole.GM:
                     return await _dbSet
                         .Where(r => r.Status == ReportStatus.Completed)
                         .Include(r => r.Creator)
@@ -199,7 +199,7 @@ namespace ProjectControlsReportingTool.API.Repositories.Implementations
             // Use enhanced access logic
             var canAccess = userRole switch
             {
-                UserRole.Executive => true,
+                UserRole.GM => true,
                 UserRole.LineManager => await CanLineManagerAccessAsync(userId, reportId, user.Department),
                 UserRole.GeneralStaff => report.CreatedBy == userId,
                 _ => false
@@ -298,7 +298,7 @@ namespace ProjectControlsReportingTool.API.Repositories.Implementations
                         report.ManagerApprovedDate = DateTime.UtcNow;
                         break;
                     case ReportStatus.Completed:
-                        report.ExecutiveApprovedDate = DateTime.UtcNow;
+                        report.GMApprovedDate = DateTime.UtcNow;
                         report.CompletedDate = DateTime.UtcNow;
                         break;
                 }
@@ -342,8 +342,8 @@ namespace ProjectControlsReportingTool.API.Repositories.Implementations
                         if (user != null)
                             query = query.Where(r => r.Department == user.Department);
                         break;
-                    case UserRole.Executive:
-                        // Executives can see all reports
+                    case UserRole.GM:
+                        // GMs can see all reports
                         break;
                 }
             }
@@ -445,11 +445,18 @@ namespace ProjectControlsReportingTool.API.Repositories.Implementations
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<Report>> GetPendingApprovalsForExecutiveAsync()
+        public async Task<IEnumerable<Report>> GetPendingApprovalsForGMAsync()
         {
             return await _context.Reports
-                .FromSqlRaw("EXEC GetPendingApprovalsForExecutive")
+                .FromSqlRaw("EXEC GetPendingApprovalsForGM")
                 .ToListAsync();
+        }
+
+        // Legacy method for backwards compatibility - will be removed later
+        public async Task<IEnumerable<Report>> GetPendingApprovalsForExecutiveAsync()
+        {
+            // Redirect to GM method for backwards compatibility
+            return await GetPendingApprovalsForGMAsync();
         }
 
         public async Task<bool> UpdateReportStatusAsync(Guid reportId, ReportStatus status, Guid updatedBy)
@@ -470,7 +477,7 @@ namespace ProjectControlsReportingTool.API.Repositories.Implementations
                         report.ManagerApprovedDate = DateTime.UtcNow;
                         break;
                     case ReportStatus.Completed:
-                        report.ExecutiveApprovedDate = DateTime.UtcNow;
+                        report.GMApprovedDate = DateTime.UtcNow;
                         report.CompletedDate = DateTime.UtcNow;
                         break;
                 }

@@ -10,7 +10,7 @@ namespace ProjectControlsReportingTool.API.Repositories.Interfaces
         Task<IEnumerable<Report>> GetReportsByDepartmentAsync(Department department);
         Task<IEnumerable<Report>> GetReportsByStatusAsync(ReportStatus status);
         Task<IEnumerable<Report>> GetPendingApprovalsForManagerAsync(Department department);
-        Task<IEnumerable<Report>> GetPendingApprovalsForExecutiveAsync();
+        Task<IEnumerable<Report>> GetPendingApprovalsForGMAsync();
         Task<bool> UpdateReportStatusAsync(Guid reportId, ReportStatus status, Guid updatedBy);
         Task<bool> ApproveReportAsync(Guid reportId, Guid approvedBy, string? comments);
         Task<bool> RejectReportAsync(Guid reportId, Guid rejectedBy, string reason);

@@ -17,7 +17,7 @@ namespace ProjectControlsReportingTool.API.Business.Interfaces
         Task<IEnumerable<ReportSummaryDto>> GetPendingApprovalsAsync(Guid userId, UserRole userRole, Department userDepartment);
         Task<IEnumerable<ReportSummaryDto>> GetUserReportsAsync(Guid userId);
         Task<IEnumerable<ReportSummaryDto>> GetTeamReportsAsync(Guid managerId, Department department);
-        Task<IEnumerable<ReportSummaryDto>> GetExecutiveReportsAsync();
+        Task<IEnumerable<ReportSummaryDto>> GetGMReportsAsync();
         Task<ReportAttachment?> GetAttachmentAsync(Guid reportId, Guid attachmentId, Guid userId);
         Task<ServiceResultDto> UploadApprovalDocumentsAsync(Guid reportId, IFormFileCollection files, Guid userId, UserRole userRole, string? description = null);
         Task<IEnumerable<ReportAttachmentDto>> GetReportAttachmentsByStageAsync(Guid reportId, ApprovalStage? stage, Guid userId, UserRole userRole);
