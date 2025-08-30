@@ -434,7 +434,7 @@ namespace ProjectControlsReportingTool.API.Business.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting executive reports");
+                _logger.LogError(ex, "Error getting GM reports");
                 return new List<ReportSummaryDto>();
             }
         }

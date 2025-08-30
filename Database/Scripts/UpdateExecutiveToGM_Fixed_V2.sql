@@ -1,6 +1,7 @@
 -- =====================================================
--- Executive to GM Migration Script - CORRECTED VERSION
+-- Executive to GM Migration Script - FINAL CORRECTED VERSION
 -- This script updates all Executive references to GM
+-- Handles various database schema configurations
 -- =====================================================
 
 -- Start transaction for safety
@@ -24,6 +25,18 @@ END
 ELSE
 BEGIN
     PRINT 'ExecutiveApprovedDate column not found - skipping rename';
+    -- Check if GMApprovedDate already exists
+    IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS 
+               WHERE TABLE_NAME = 'Reports' AND COLUMN_NAME = 'GMApprovedDate')
+    BEGIN
+        PRINT 'GMApprovedDate column already exists';
+    END
+    ELSE
+    BEGIN
+        -- Create GMApprovedDate column if it doesn't exist
+        ALTER TABLE Reports ADD GMApprovedDate DATETIME2(7) NULL;
+        PRINT 'Created new GMApprovedDate column';
+    END
 END
 
 -- =====================================================
@@ -172,8 +185,7 @@ BEGIN
             UPDATE Reports 
             SET Status = @NewStatus, 
                 ManagerApprovedDate = @ApprovalDate,
-                LastModifiedDate = @ApprovalDate,
-                LastModifiedBy = @UserId
+                LastModifiedDate = @ApprovalDate
             WHERE Id = @ReportId;
         END
     END
@@ -186,8 +198,7 @@ BEGIN
             SET Status = @NewStatus, 
                 GMApprovedDate = @ApprovalDate,
                 CompletedDate = @ApprovalDate,
-                LastModifiedDate = @ApprovalDate,
-                LastModifiedBy = @UserId
+                LastModifiedDate = @ApprovalDate
             WHERE Id = @ReportId;
         END
     END
@@ -241,8 +252,7 @@ BEGIN
     -- Update report status
     UPDATE Reports 
     SET Status = @NewStatus,
-        LastModifiedDate = @RejectionDate,
-        LastModifiedBy = @UserId
+        LastModifiedDate = @RejectionDate
     WHERE Id = @ReportId;
     
     -- Insert audit log
@@ -394,3 +404,5 @@ COMMIT TRANSACTION GMUpdate;
 PRINT 'Executive to GM migration completed successfully!';
 PRINT 'All procedures have been updated to use GM role (3) instead of Executive';
 PRINT 'Column ExecutiveApprovedDate has been renamed to GMApprovedDate';
+PRINT '';
+PRINT 'Completion time: ' + CONVERT(NVARCHAR, GETUTCDATE(), 126);

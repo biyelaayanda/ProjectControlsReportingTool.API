@@ -235,7 +235,7 @@ namespace ProjectControlsReportingTool.API.Repositories.Implementations
                 // Fallback to basic access logic - Line Managers can view all reports from their department
                 var fallbackResult = userRole switch
                 {
-                    UserRole.Executive => true,
+                    UserRole.GM => true,
                     UserRole.LineManager => report.Department == user.Department, // Allow all statuses for Line Managers
                     UserRole.GeneralStaff => report.CreatedBy == userId,
                     _ => false
@@ -370,7 +370,7 @@ namespace ProjectControlsReportingTool.API.Repositories.Implementations
             var user = await _context.Users.FindAsync(approvedBy);
             if (user == null) return false;
 
-            var signatureType = user.Role == UserRole.LineManager ? 1 : 2; // 1 = Manager, 2 = Executive
+            var signatureType = user.Role == UserRole.LineManager ? 1 : 2; // 1 = Manager, 2 = GM
 
             var parameters = new[]
             {
