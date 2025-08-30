@@ -370,43 +370,47 @@ namespace ProjectControlsReportingTool.API.Repositories.Implementations
             var user = await _context.Users.FindAsync(approvedBy);
             if (user == null) return false;
 
-            var signatureType = user.Role == UserRole.LineManager ? 1 : 2; // 1 = Manager, 2 = GM
-
             var parameters = new[]
             {
                 new SqlParameter("@ReportId", reportId),
-                new SqlParameter("@ApprovedBy", approvedBy),
-                new SqlParameter("@Comments", (object)comments ?? DBNull.Value),
-                new SqlParameter("@SignatureType", signatureType)
+                new SqlParameter("@UserId", approvedBy),
+                new SqlParameter("@UserRole", (int)user.Role),
+                new SqlParameter("@Comments", (object)comments ?? DBNull.Value)
             };
 
-            var result = await _context.Database.ExecuteSqlRawAsync(
-                "EXEC ApproveReport @ReportId, @ApprovedBy, @Comments, @SignatureType", parameters);
+            var results = await _context.Database
+                .SqlQueryRaw<int>("EXEC ApproveReport @ReportId, @UserId, @UserRole, @Comments", parameters)
+                .ToListAsync();
 
-            return result > 0;
+            return results.Any() && results[0] > 0;
         }
 
         public async Task<bool> RejectReportAsync(Guid reportId, Guid rejectedBy, string reason)
         {
             try
             {
+                // Get the user to determine their role
+                var user = await _context.Users.FindAsync(rejectedBy);
+                if (user == null) return false;
+
                 var parameters = new[]
                 {
                     new SqlParameter("@ReportId", reportId),
-                    new SqlParameter("@RejectedBy", rejectedBy),
-                    new SqlParameter("@Reason", reason)
+                    new SqlParameter("@UserId", rejectedBy),
+                    new SqlParameter("@UserRole", (int)user.Role),
+                    new SqlParameter("@Comments", (object)reason ?? DBNull.Value)
                 };
 
-                Console.WriteLine($"Executing RejectReport SP with ReportId: {reportId}, RejectedBy: {rejectedBy}, Reason: {reason}");
+                Console.WriteLine($"Executing RejectReport SP with ReportId: {reportId}, UserId: {rejectedBy}, UserRole: {(int)user.Role}, Comments: {reason}");
 
                 // Use SqlQueryRaw to capture the result set from the stored procedure
                 var results = await _context.Database
-                    .SqlQueryRaw<int>("EXEC RejectReport @ReportId, @RejectedBy, @Reason", parameters)
+                    .SqlQueryRaw<int>("EXEC RejectReport @ReportId, @UserId, @UserRole, @Comments", parameters)
                     .ToListAsync();
 
                 Console.WriteLine($"SP returned {results.Count} results: [{string.Join(", ", results)}]");
 
-                var success = results.Any() && results.First() == 1;
+                var success = results.Any() && results[0] > 0;
                 Console.WriteLine($"Rejection success: {success}");
                 return success;
             }

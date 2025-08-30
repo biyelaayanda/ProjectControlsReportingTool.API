@@ -4,6 +4,7 @@ using ProjectControlsReportingTool.API.Business.Interfaces;
 using ProjectControlsReportingTool.API.Models.DTOs;
 using ProjectControlsReportingTool.API.Models.Enums;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace ProjectControlsReportingTool.API.Controllers
 {
@@ -20,9 +21,27 @@ namespace ProjectControlsReportingTool.API.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateReport([FromForm] CreateReportDto dto)
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> CreateReportWithFiles([FromForm] CreateReportDto dto)
         {
             var userId = GetCurrentUserId();
+            var result = await _reportService.CreateReportAsync(dto, userId);
+            
+            if (result == null)
+                return BadRequest("Failed to create report");
+                
+            return Ok(result);
+        }
+
+        [HttpPost("json")]
+        [Consumes("application/json")]
+        public async Task<IActionResult> CreateReportJson([FromBody] CreateReportDto dto)
+        {
+            var userId = GetCurrentUserId();
+            
+            // Ensure no attachments for JSON requests
+            dto.Attachments = null;
+            
             var result = await _reportService.CreateReportAsync(dto, userId);
             
             if (result == null)
