@@ -649,15 +649,43 @@ namespace ProjectControlsReportingTool.API.Business.Services
                         // Line managers can upload when report is submitted for their review
                         // AND when the report is from their department
                         var currentUser = await _userRepository.GetByIdAsync(userId);
-                        canUpload = report.Status == ReportStatus.Submitted && 
-                                   currentUser != null && 
-                                   report.Department == currentUser.Department;
+                        _logger.LogInformation($"Manager upload check: UserId={userId}, UserDept={currentUser?.Department}, ReportDept={report.Department}, ReportStatus={report.Status}");
+                        
+                        if (currentUser == null)
+                        {
+                            return ServiceResultDto.ErrorResult("User not found");
+                        }
+                        
+                        if (report.Status != ReportStatus.Submitted)
+                        {
+                            return ServiceResultDto.ErrorResult($"Cannot upload documents. Report status must be Submitted, but is: {report.Status}");
+                        }
+                        
+                        if (report.Department != currentUser.Department)
+                        {
+                            return ServiceResultDto.ErrorResult($"Cannot upload documents. Report is from {report.Department} department, but you are from {currentUser.Department} department");
+                        }
+                        
+                        canUpload = true;
                         approvalStage = ApprovalStage.ManagerReview;
                         break;
                     case UserRole.Executive:
                         // Executives can upload when report is manager-approved or submitted by line managers
-                        canUpload = report.Status == ReportStatus.ManagerApproved || 
-                                   (report.Status == ReportStatus.Submitted && report.Creator.Role == UserRole.LineManager);
+                        _logger.LogInformation($"Executive upload check: ReportStatus={report.Status}, CreatorRole={report.Creator?.Role}");
+                        
+                        if (report.Status == ReportStatus.ManagerApproved)
+                        {
+                            canUpload = true;
+                        }
+                        else if (report.Status == ReportStatus.Submitted && report.Creator?.Role == UserRole.LineManager)
+                        {
+                            canUpload = true;
+                        }
+                        else
+                        {
+                            return ServiceResultDto.ErrorResult($"Cannot upload documents. Report status: {report.Status}, Creator role: {report.Creator?.Role}");
+                        }
+                        
                         approvalStage = ApprovalStage.ExecutiveReview;
                         break;
                     default:
