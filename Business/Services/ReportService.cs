@@ -646,11 +646,18 @@ namespace ProjectControlsReportingTool.API.Business.Services
                 switch (userRole)
                 {
                     case UserRole.LineManager:
-                        canUpload = report.Status == ReportStatus.ManagerReview;
+                        // Line managers can upload when report is submitted for their review
+                        // AND when the report is from their department
+                        var currentUser = await _userRepository.GetByIdAsync(userId);
+                        canUpload = report.Status == ReportStatus.Submitted && 
+                                   currentUser != null && 
+                                   report.Department == currentUser.Department;
                         approvalStage = ApprovalStage.ManagerReview;
                         break;
                     case UserRole.Executive:
-                        canUpload = report.Status == ReportStatus.ExecutiveReview;
+                        // Executives can upload when report is manager-approved or submitted by line managers
+                        canUpload = report.Status == ReportStatus.ManagerApproved || 
+                                   (report.Status == ReportStatus.Submitted && report.Creator.Role == UserRole.LineManager);
                         approvalStage = ApprovalStage.ExecutiveReview;
                         break;
                     default:
