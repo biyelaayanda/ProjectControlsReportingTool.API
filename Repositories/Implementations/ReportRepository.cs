@@ -183,18 +183,14 @@ namespace ProjectControlsReportingTool.API.Repositories.Implementations
             var report = await _dbSet.FindAsync(reportId);
             if (report == null) 
             {
-                Console.WriteLine($"Report {reportId} not found");
                 return false;
             }
 
             var user = await _context.Users.FindAsync(userId);
             if (user == null) 
             {
-                Console.WriteLine($"User {userId} not found");
                 return false;
             }
-
-            Console.WriteLine($"Checking access: User {userId} (Role: {userRole}, Dept: {user.Department}) -> Report {reportId} (Status: {report.Status}, Dept: {report.Department}, CreatedBy: {report.CreatedBy})");
 
             // Use enhanced access logic
             var canAccess = userRole switch
@@ -205,7 +201,6 @@ namespace ProjectControlsReportingTool.API.Repositories.Implementations
                 _ => false
             };
             
-            Console.WriteLine($"Access result: {canAccess}");
             return canAccess;
 
             /* Temporarily disabled stored procedure approach
@@ -224,14 +219,11 @@ namespace ProjectControlsReportingTool.API.Repositories.Implementations
                     .ToListAsync();
 
                 var canAccess = result.FirstOrDefault()?.CanAccess == 1;
-                Console.WriteLine($"Stored procedure result: {canAccess}");
                 return canAccess;
             }
             catch (Exception ex)
             {
                 // Log the exception for debugging
-                Console.WriteLine($"Error in CanUserAccessReport SP: {ex.Message}");
-                
                 // Fallback to basic access logic - Line Managers can view all reports from their department
                 var fallbackResult = userRole switch
                 {
@@ -241,7 +233,6 @@ namespace ProjectControlsReportingTool.API.Repositories.Implementations
                     _ => false
                 };
                 
-                Console.WriteLine($"Using fallback logic: {fallbackResult}");
                 return fallbackResult;
             }
             */
@@ -256,14 +247,12 @@ namespace ProjectControlsReportingTool.API.Repositories.Implementations
             // 1. Their own reports (reports they created)
             if (report.CreatedBy == userId) 
             {
-                Console.WriteLine($"Access granted: Line Manager owns the report");
                 return true;
             }
 
             // 2. Reports from their department
             if (report.Department == userDepartment)
             {
-                Console.WriteLine($"Access granted: Report from Line Manager's department");
                 return true;
             }
 
@@ -272,11 +261,9 @@ namespace ProjectControlsReportingTool.API.Repositories.Implementations
                 .AnyAsync(s => s.ReportId == reportId && s.UserId == userId && s.IsActive);
             if (hasSignature)
             {
-                Console.WriteLine($"Access granted: Line Manager has previously reviewed this report");
                 return true;
             }
 
-            Console.WriteLine($"Access denied: No valid access path for Line Manager");
             return false;
         }
 
@@ -401,23 +388,16 @@ namespace ProjectControlsReportingTool.API.Repositories.Implementations
                     new SqlParameter("@Comments", (object)reason ?? DBNull.Value)
                 };
 
-                Console.WriteLine($"Executing RejectReport SP with ReportId: {reportId}, UserId: {rejectedBy}, UserRole: {(int)user.Role}, Comments: {reason}");
-
                 // Use SqlQueryRaw to capture the result set from the stored procedure
                 var results = await _context.Database
                     .SqlQueryRaw<int>("EXEC RejectReport @ReportId, @UserId, @UserRole, @Comments", parameters)
                     .ToListAsync();
 
-                Console.WriteLine($"SP returned {results.Count} results: [{string.Join(", ", results)}]");
-
                 var success = results.Any() && results[0] > 0;
-                Console.WriteLine($"Rejection success: {success}");
                 return success;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error in RejectReportAsync: {ex.Message}");
-                Console.WriteLine($"Stack trace: {ex.StackTrace}");
                 return false;
             }
         }
@@ -544,3 +524,4 @@ namespace ProjectControlsReportingTool.API.Repositories.Implementations
         }
     }
 }
+

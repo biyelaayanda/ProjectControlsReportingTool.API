@@ -28,8 +28,6 @@ void SetupDependencyInjection(WebApplicationBuilder webApplicationBuilder)
     webApplicationBuilder.Services.AddScoped<IUserRepository, UserRepository>();
     webApplicationBuilder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
     webApplicationBuilder.Services.AddScoped<IReportRepository, ReportRepository>();
-    // webApplicationBuilder.Services.AddScoped<IReportSignatureRepository, ReportSignatureRepository>();
-    // webApplicationBuilder.Services.AddScoped<IReportAttachmentRepository, ReportAttachmentRepository>();
     
     // Business services
     webApplicationBuilder.Services.AddScoped<IUserService, UserService>();
@@ -152,12 +150,11 @@ using (var scope = app.Services.CreateScope())
     try
     {
         context.Database.EnsureCreated();
-        Console.WriteLine("Database connection successful!");
-    }
+        }
     catch (Exception ex)
     {
-        Console.WriteLine($"Database connection failed: {ex.Message}");
-    }
+        }
 }
 
 app.Run();
+

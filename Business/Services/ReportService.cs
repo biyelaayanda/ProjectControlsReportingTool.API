@@ -135,39 +135,27 @@ namespace ProjectControlsReportingTool.API.Business.Services
         {
             try
             {
-                Console.WriteLine($"GetReportByIdAsync called: ReportId={reportId}, UserId={userId}, UserRole={userRole}");
-                
                 var user = await _userRepository.GetByIdAsync(userId);
                 if (user == null) 
                 {
-                    Console.WriteLine($"User {userId} not found");
                     return null;
                 }
-                Console.WriteLine($"User found: {user.FirstName} {user.LastName}, Department: {user.Department}");
-
                 var canAccess = await _reportRepository.CanUserAccessReportAsync(reportId, userId, userRole, user.Department);
-                Console.WriteLine($"Access check result: {canAccess}");
                 if (!canAccess) 
                 {
-                    Console.WriteLine($"Access denied for user {userId} to report {reportId}");
                     return null;
                 }
 
                 var report = await _reportRepository.GetReportWithDetailsAsync(reportId);
                 if (report == null) 
                 {
-                    Console.WriteLine($"Report {reportId} not found in database");
                     return null;
                 }
-                Console.WriteLine($"Report found: {report.Title}, Status: {report.Status}, Department: {report.Department}");
-
                 var result = _mapper.Map<ReportDetailDto>(report);
-                Console.WriteLine($"Successfully mapped report to DTO");
                 return result;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Exception in GetReportByIdAsync: {ex.Message}");
                 _logger.LogError(ex, "Error getting report {ReportId} for user {UserId}", reportId, userId);
                 return null;
             }
@@ -271,18 +259,14 @@ namespace ProjectControlsReportingTool.API.Business.Services
         {
             try
             {
-                Console.WriteLine($"RejectReportAsync called: ReportId={reportId}, UserId={userId}, UserRole={userRole}, Reason={dto.Reason}");
-                
                 var user = await _userRepository.GetByIdAsync(userId);
                 if (user == null)
                 {
-                    Console.WriteLine($"User {userId} not found");
                     return ServiceResultDto.ErrorResult("User not found");
                 }
 
                 if (userRole != UserRole.LineManager && userRole != UserRole.GM)
                 {
-                    Console.WriteLine($"Insufficient permissions for user {userId} with role {userRole}");
                     return ServiceResultDto.ErrorResult("Insufficient permissions");
                 }
 
@@ -290,42 +274,32 @@ namespace ProjectControlsReportingTool.API.Business.Services
                 var report = await _reportRepository.GetByIdAsync(reportId);
                 if (report == null)
                 {
-                    Console.WriteLine($"Report {reportId} not found");
                     return ServiceResultDto.ErrorResult("Report not found");
                 }
-
-                Console.WriteLine($"Report found: {report.Title}, Status: {report.Status}");
 
                 // Check if report can be rejected based on current status and user role
                 if (userRole == UserRole.LineManager && report.Status != ReportStatus.Submitted)
                 {
-                    Console.WriteLine($"Line Manager cannot reject report with status {report.Status}");
                     return ServiceResultDto.ErrorResult("Report must be in Submitted status for Line Manager to reject");
                 }
 
                 if (userRole == UserRole.GM && report.Status != ReportStatus.ManagerApproved && report.Status != ReportStatus.Submitted && report.Status != ReportStatus.GMReview)
                 {
-                    Console.WriteLine($"GM cannot reject report with status {report.Status}");
                     return ServiceResultDto.ErrorResult("Report must be Manager Approved, GM Review, or Submitted (for manager-created reports) for GM to reject");
                 }
 
                 var success = await _reportRepository.RejectReportAsync(reportId, userId, dto.Reason);
-                Console.WriteLine($"Repository rejection result: {success}");
-                
                 if (success)
                 {
                     await _auditLogRepository.LogActionAsync(AuditAction.Rejected, userId, reportId, 
                         $"Report rejected by {userRole}: {dto.Reason}");
-                    Console.WriteLine($"Report {reportId} successfully rejected");
                     return ServiceResultDto.SuccessResult();
                 }
 
-                Console.WriteLine($"Failed to reject report {reportId}");
                 return ServiceResultDto.ErrorResult("Failed to reject report");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Exception in RejectReportAsync: {ex.Message}");
                 _logger.LogError(ex, "Error rejecting report {ReportId}", reportId);
                 return ServiceResultDto.ErrorResult("An error occurred");
             }
