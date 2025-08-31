@@ -1406,9 +1406,6 @@ namespace ProjectControlsReportingTool.API.Migrations
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("UserId1")
-                        .HasColumnType("uniqueidentifier");
-
                     b.HasKey("Id");
 
                     b.HasIndex("DeviceType");
@@ -1425,8 +1422,6 @@ namespace ProjectControlsReportingTool.API.Migrations
                     b.HasIndex("LastUsed");
 
                     b.HasIndex("UserId");
-
-                    b.HasIndex("UserId1");
 
                     b.HasIndex("DeviceType", "IsActive");
 
@@ -2444,15 +2439,9 @@ namespace ProjectControlsReportingTool.API.Migrations
 
             modelBuilder.Entity("ProjectControlsReportingTool.API.Models.Entities.PushNotificationSubscription", b =>
                 {
-                    b.HasOne("ProjectControlsReportingTool.API.Models.Entities.User", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("ProjectControlsReportingTool.API.Models.Entities.User", "User")
                         .WithMany()
-                        .HasForeignKey("UserId1")
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

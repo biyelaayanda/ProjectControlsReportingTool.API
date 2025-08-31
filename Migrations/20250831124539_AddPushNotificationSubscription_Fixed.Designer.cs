@@ -12,8 +12,8 @@ using ProjectControlsReportingTool.API.Data;
 namespace ProjectControlsReportingTool.API.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250831105533_AddPushNotificationSubscription")]
-    partial class AddPushNotificationSubscription
+    [Migration("20250831124539_AddPushNotificationSubscription_Fixed")]
+    partial class AddPushNotificationSubscription_Fixed
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -24,6 +24,710 @@ namespace ProjectControlsReportingTool.API.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+            modelBuilder.Entity("ProjectControlsReportingTool.API.Data.Entities.SlackDeliveryFailure", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Channel")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ErrorMessage")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("FailedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("NextRetryAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("NotificationType")
+                        .HasColumnType("int");
+
+                    b.Property<string>("OriginalPayloadJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("RetryCount")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("SlackMessageId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("StatusCode")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("WebhookConfigId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("WebhookUrl")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SlackMessageId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("WebhookConfigId");
+
+                    b.ToTable("SlackDeliveryFailures");
+                });
+
+            modelBuilder.Entity("ProjectControlsReportingTool.API.Data.Entities.SlackIntegrationStat", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<TimeSpan>("AverageResponseTime")
+                        .HasColumnType("time");
+
+                    b.Property<string>("Channel")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ErrorSummaryJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("FailedDeliveries")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("LastMessageSent")
+                        .HasColumnType("datetime2");
+
+                    b.Property<TimeSpan>("MaxResponseTime")
+                        .HasColumnType("time");
+
+                    b.Property<TimeSpan>("MinResponseTime")
+                        .HasColumnType("time");
+
+                    b.Property<int>("NotificationType")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("StatDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("SuccessfulDeliveries")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TotalMessages")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("WebhookConfigId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("WebhookUrl")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("WebhookConfigId");
+
+                    b.ToTable("SlackIntegrationStats");
+                });
+
+            modelBuilder.Entity("ProjectControlsReportingTool.API.Data.Entities.SlackMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AttachmentsJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("BlocksJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Channel")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("IconEmoji")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("IconUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("MessageId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("NotificationType")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("ReportId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<TimeSpan?>("ResponseTime")
+                        .HasColumnType("time");
+
+                    b.Property<DateTime?>("SentAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("StatusCode")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ThreadTs")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("UnfurlLinks")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("UnfurlMedia")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Username")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid?>("WebhookConfigId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("WebhookUrl")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReportId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("WebhookConfigId");
+
+                    b.ToTable("SlackMessages");
+                });
+
+            modelBuilder.Entity("ProjectControlsReportingTool.API.Data.Entities.SlackNotificationTemplate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Channel")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DefaultAttachmentsJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DefaultBlocksJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("IconEmoji")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("NotificationType")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TextTemplate")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("UseAttachments")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("UseBlocks")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Username")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid?>("WebhookConfigId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("WebhookConfigId");
+
+                    b.ToTable("SlackNotificationTemplates");
+                });
+
+            modelBuilder.Entity("ProjectControlsReportingTool.API.Data.Entities.SlackWebhookConfig", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CustomSettingsJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DefaultChannel")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("DefaultIconEmoji")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("DefaultUsername")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("EnabledNotificationsJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("UseAttachments")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("UseBlocks")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("WebhookUrl")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("SlackWebhookConfigs");
+                });
+
+            modelBuilder.Entity("ProjectControlsReportingTool.API.Data.Entities.TeamsDeliveryFailure", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ErrorMessage")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("FailedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("NextRetryAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("NotificationType")
+                        .HasColumnType("int");
+
+                    b.Property<string>("OriginalPayloadJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("RetryCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("StatusCode")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("TeamsMessageId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("WebhookConfigId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("WebhookUrl")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TeamsMessageId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("WebhookConfigId");
+
+                    b.ToTable("TeamsDeliveryFailures");
+                });
+
+            modelBuilder.Entity("ProjectControlsReportingTool.API.Data.Entities.TeamsIntegrationStat", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<TimeSpan>("AverageResponseTime")
+                        .HasColumnType("time");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ErrorSummaryJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("FailedDeliveries")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("LastMessageSent")
+                        .HasColumnType("datetime2");
+
+                    b.Property<TimeSpan>("MaxResponseTime")
+                        .HasColumnType("time");
+
+                    b.Property<TimeSpan>("MinResponseTime")
+                        .HasColumnType("time");
+
+                    b.Property<int>("NotificationType")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("StatDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("SuccessfulDeliveries")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TotalMessages")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("WebhookConfigId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("WebhookUrl")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("WebhookConfigId");
+
+                    b.ToTable("TeamsIntegrationStats");
+                });
+
+            modelBuilder.Entity("ProjectControlsReportingTool.API.Data.Entities.TeamsMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ActionsJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FactsJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("MessageId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("MessageType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("NotificationType")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("ReportId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<TimeSpan?>("ResponseTime")
+                        .HasColumnType("time");
+
+                    b.Property<DateTime?>("SentAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("StatusCode")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ThemeColor")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("UseAdaptiveCard")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("WebhookConfigId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("WebhookUrl")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReportId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("WebhookConfigId");
+
+                    b.ToTable("TeamsMessages");
+                });
+
+            modelBuilder.Entity("ProjectControlsReportingTool.API.Data.Entities.TeamsNotificationTemplate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DefaultActionsJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DefaultFactsJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("MessageTemplate")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("NotificationType")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ThemeColor")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("TitleTemplate")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("UseAdaptiveCard")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("WebhookConfigId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("WebhookConfigId");
+
+                    b.ToTable("TeamsNotificationTemplates");
+                });
+
+            modelBuilder.Entity("ProjectControlsReportingTool.API.Data.Entities.TeamsWebhookConfig", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CustomSettingsJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DefaultFormat")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("DefaultThemeColor")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("EnabledNotificationsJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("WebhookUrl")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("TeamsWebhookConfigs");
+                });
 
             modelBuilder.Entity("ProjectControlsReportingTool.API.Models.Entities.AuditLog", b =>
                 {
@@ -705,9 +1409,6 @@ namespace ProjectControlsReportingTool.API.Migrations
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("UserId1")
-                        .HasColumnType("uniqueidentifier");
-
                     b.HasKey("Id");
 
                     b.HasIndex("DeviceType");
@@ -724,8 +1425,6 @@ namespace ProjectControlsReportingTool.API.Migrations
                     b.HasIndex("LastUsed");
 
                     b.HasIndex("UserId");
-
-                    b.HasIndex("UserId1");
 
                     b.HasIndex("DeviceType", "IsActive");
 
@@ -1009,6 +1708,307 @@ namespace ProjectControlsReportingTool.API.Migrations
                     b.ToTable("ReportTemplates");
                 });
 
+            modelBuilder.Entity("ProjectControlsReportingTool.API.Models.Entities.SmsMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("BatchId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Carrier")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal>("Cost")
+                        .HasColumnType("decimal(10,4)");
+
+                    b.Property<string>("CountryCode")
+                        .HasMaxLength(5)
+                        .HasColumnType("varchar(5)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeliveredAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("DeliveryAttempts")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("DeliveryReceiptRequested")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Encoding")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime?>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ExternalMessageId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsSensitive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsUrgent")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastDeliveryAttempt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(1600)
+                        .HasColumnType("nvarchar(1600)");
+
+                    b.Property<string>("MessageType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<string>("Metadata")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Priority")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<DateTime?>("ReadAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Recipient")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<Guid?>("RelatedReportId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("RetryAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("SegmentCount")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("SentAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<Guid?>("TemplateId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BatchId");
+
+                    b.HasIndex("ExternalMessageId");
+
+                    b.HasIndex("Recipient");
+
+                    b.HasIndex("RelatedReportId");
+
+                    b.HasIndex("SentAt");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("TemplateId");
+
+                    b.HasIndex("Provider", "SentAt");
+
+                    b.HasIndex("Status", "IsUrgent");
+
+                    b.HasIndex("UserId", "SentAt");
+
+                    b.ToTable("SmsMessages");
+                });
+
+            modelBuilder.Entity("ProjectControlsReportingTool.API.Models.Entities.SmsStatistic", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<double>("AverageDeliveryTime")
+                        .HasColumnType("float");
+
+                    b.Property<string>("CountryStats")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<decimal>("DeliveryRate")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<string>("ErrorBreakdown")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("MessagesByType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("MessagesDelivered")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MessagesFailed")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MessagesPending")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MessagesSent")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<decimal>("TotalCost")
+                        .HasColumnType("decimal(10,4)");
+
+                    b.Property<int>("UniqueRecipients")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Date");
+
+                    b.HasIndex("Provider");
+
+                    b.HasIndex("Date", "Provider")
+                        .IsUnique();
+
+                    b.ToTable("SmsStatistics");
+                });
+
+            modelBuilder.Entity("ProjectControlsReportingTool.API.Models.Entities.SmsTemplate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("DefaultIsUrgent")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("DefaultMessageType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<string>("DefaultPriority")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsSystemTemplate")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastUsedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("MaxRenderedLength")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Tags")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Template")
+                        .IsRequired()
+                        .HasMaxLength(1600)
+                        .HasColumnType("nvarchar(1600)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("UsageCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Variables")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Category");
+
+                    b.HasIndex("CreatedBy");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("IsSystemTemplate");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.HasIndex("UpdatedBy");
+
+                    b.HasIndex("Category", "IsActive");
+
+                    b.ToTable("SmsTemplates");
+                });
+
             modelBuilder.Entity("ProjectControlsReportingTool.API.Models.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1146,6 +2146,176 @@ namespace ProjectControlsReportingTool.API.Migrations
                     b.ToTable("UserNotificationPreferences");
                 });
 
+            modelBuilder.Entity("ProjectControlsReportingTool.API.Data.Entities.SlackDeliveryFailure", b =>
+                {
+                    b.HasOne("ProjectControlsReportingTool.API.Data.Entities.SlackMessage", "SlackMessage")
+                        .WithMany()
+                        .HasForeignKey("SlackMessageId");
+
+                    b.HasOne("ProjectControlsReportingTool.API.Models.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
+
+                    b.HasOne("ProjectControlsReportingTool.API.Data.Entities.SlackWebhookConfig", "WebhookConfig")
+                        .WithMany()
+                        .HasForeignKey("WebhookConfigId");
+
+                    b.Navigation("SlackMessage");
+
+                    b.Navigation("User");
+
+                    b.Navigation("WebhookConfig");
+                });
+
+            modelBuilder.Entity("ProjectControlsReportingTool.API.Data.Entities.SlackIntegrationStat", b =>
+                {
+                    b.HasOne("ProjectControlsReportingTool.API.Models.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
+
+                    b.HasOne("ProjectControlsReportingTool.API.Data.Entities.SlackWebhookConfig", "WebhookConfig")
+                        .WithMany()
+                        .HasForeignKey("WebhookConfigId");
+
+                    b.Navigation("User");
+
+                    b.Navigation("WebhookConfig");
+                });
+
+            modelBuilder.Entity("ProjectControlsReportingTool.API.Data.Entities.SlackMessage", b =>
+                {
+                    b.HasOne("ProjectControlsReportingTool.API.Models.Entities.Report", "Report")
+                        .WithMany()
+                        .HasForeignKey("ReportId");
+
+                    b.HasOne("ProjectControlsReportingTool.API.Models.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
+
+                    b.HasOne("ProjectControlsReportingTool.API.Data.Entities.SlackWebhookConfig", "WebhookConfig")
+                        .WithMany("Messages")
+                        .HasForeignKey("WebhookConfigId");
+
+                    b.Navigation("Report");
+
+                    b.Navigation("User");
+
+                    b.Navigation("WebhookConfig");
+                });
+
+            modelBuilder.Entity("ProjectControlsReportingTool.API.Data.Entities.SlackNotificationTemplate", b =>
+                {
+                    b.HasOne("ProjectControlsReportingTool.API.Models.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ProjectControlsReportingTool.API.Data.Entities.SlackWebhookConfig", "WebhookConfig")
+                        .WithMany("Templates")
+                        .HasForeignKey("WebhookConfigId");
+
+                    b.Navigation("User");
+
+                    b.Navigation("WebhookConfig");
+                });
+
+            modelBuilder.Entity("ProjectControlsReportingTool.API.Data.Entities.SlackWebhookConfig", b =>
+                {
+                    b.HasOne("ProjectControlsReportingTool.API.Models.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ProjectControlsReportingTool.API.Data.Entities.TeamsDeliveryFailure", b =>
+                {
+                    b.HasOne("ProjectControlsReportingTool.API.Data.Entities.TeamsMessage", "TeamsMessage")
+                        .WithMany()
+                        .HasForeignKey("TeamsMessageId");
+
+                    b.HasOne("ProjectControlsReportingTool.API.Models.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
+
+                    b.HasOne("ProjectControlsReportingTool.API.Data.Entities.TeamsWebhookConfig", "WebhookConfig")
+                        .WithMany()
+                        .HasForeignKey("WebhookConfigId");
+
+                    b.Navigation("TeamsMessage");
+
+                    b.Navigation("User");
+
+                    b.Navigation("WebhookConfig");
+                });
+
+            modelBuilder.Entity("ProjectControlsReportingTool.API.Data.Entities.TeamsIntegrationStat", b =>
+                {
+                    b.HasOne("ProjectControlsReportingTool.API.Models.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
+
+                    b.HasOne("ProjectControlsReportingTool.API.Data.Entities.TeamsWebhookConfig", "WebhookConfig")
+                        .WithMany()
+                        .HasForeignKey("WebhookConfigId");
+
+                    b.Navigation("User");
+
+                    b.Navigation("WebhookConfig");
+                });
+
+            modelBuilder.Entity("ProjectControlsReportingTool.API.Data.Entities.TeamsMessage", b =>
+                {
+                    b.HasOne("ProjectControlsReportingTool.API.Models.Entities.Report", "Report")
+                        .WithMany()
+                        .HasForeignKey("ReportId");
+
+                    b.HasOne("ProjectControlsReportingTool.API.Models.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
+
+                    b.HasOne("ProjectControlsReportingTool.API.Data.Entities.TeamsWebhookConfig", "WebhookConfig")
+                        .WithMany("Messages")
+                        .HasForeignKey("WebhookConfigId");
+
+                    b.Navigation("Report");
+
+                    b.Navigation("User");
+
+                    b.Navigation("WebhookConfig");
+                });
+
+            modelBuilder.Entity("ProjectControlsReportingTool.API.Data.Entities.TeamsNotificationTemplate", b =>
+                {
+                    b.HasOne("ProjectControlsReportingTool.API.Models.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ProjectControlsReportingTool.API.Data.Entities.TeamsWebhookConfig", "WebhookConfig")
+                        .WithMany("Templates")
+                        .HasForeignKey("WebhookConfigId");
+
+                    b.Navigation("User");
+
+                    b.Navigation("WebhookConfig");
+                });
+
+            modelBuilder.Entity("ProjectControlsReportingTool.API.Data.Entities.TeamsWebhookConfig", b =>
+                {
+                    b.HasOne("ProjectControlsReportingTool.API.Models.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("ProjectControlsReportingTool.API.Models.Entities.AuditLog", b =>
                 {
                     b.HasOne("ProjectControlsReportingTool.API.Models.Entities.Report", "Report")
@@ -1272,15 +2442,9 @@ namespace ProjectControlsReportingTool.API.Migrations
 
             modelBuilder.Entity("ProjectControlsReportingTool.API.Models.Entities.PushNotificationSubscription", b =>
                 {
-                    b.HasOne("ProjectControlsReportingTool.API.Models.Entities.User", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("ProjectControlsReportingTool.API.Models.Entities.User", "User")
                         .WithMany()
-                        .HasForeignKey("UserId1")
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1368,6 +2532,48 @@ namespace ProjectControlsReportingTool.API.Migrations
                     b.Navigation("LastModifiedByUser");
                 });
 
+            modelBuilder.Entity("ProjectControlsReportingTool.API.Models.Entities.SmsMessage", b =>
+                {
+                    b.HasOne("ProjectControlsReportingTool.API.Models.Entities.Report", "RelatedReport")
+                        .WithMany()
+                        .HasForeignKey("RelatedReportId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("ProjectControlsReportingTool.API.Models.Entities.SmsTemplate", "Template")
+                        .WithMany("SmsMessages")
+                        .HasForeignKey("TemplateId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("ProjectControlsReportingTool.API.Models.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("RelatedReport");
+
+                    b.Navigation("Template");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ProjectControlsReportingTool.API.Models.Entities.SmsTemplate", b =>
+                {
+                    b.HasOne("ProjectControlsReportingTool.API.Models.Entities.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ProjectControlsReportingTool.API.Models.Entities.User", "UpdatedByUser")
+                        .WithMany()
+                        .HasForeignKey("UpdatedBy")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("UpdatedByUser");
+                });
+
             modelBuilder.Entity("ProjectControlsReportingTool.API.Models.Entities.UserNotificationPreference", b =>
                 {
                     b.HasOne("ProjectControlsReportingTool.API.Models.Entities.User", "User")
@@ -1377,6 +2583,20 @@ namespace ProjectControlsReportingTool.API.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ProjectControlsReportingTool.API.Data.Entities.SlackWebhookConfig", b =>
+                {
+                    b.Navigation("Messages");
+
+                    b.Navigation("Templates");
+                });
+
+            modelBuilder.Entity("ProjectControlsReportingTool.API.Data.Entities.TeamsWebhookConfig", b =>
+                {
+                    b.Navigation("Messages");
+
+                    b.Navigation("Templates");
                 });
 
             modelBuilder.Entity("ProjectControlsReportingTool.API.Models.Entities.Notification", b =>
@@ -1401,6 +2621,11 @@ namespace ProjectControlsReportingTool.API.Migrations
             modelBuilder.Entity("ProjectControlsReportingTool.API.Models.Entities.ReportTemplate", b =>
                 {
                     b.Navigation("ReportsCreatedFromTemplate");
+                });
+
+            modelBuilder.Entity("ProjectControlsReportingTool.API.Models.Entities.SmsTemplate", b =>
+                {
+                    b.Navigation("SmsMessages");
                 });
 
             modelBuilder.Entity("ProjectControlsReportingTool.API.Models.Entities.User", b =>

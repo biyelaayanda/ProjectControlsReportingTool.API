@@ -317,7 +317,7 @@ namespace ProjectControlsReportingTool.API.Data
                 entity.HasIndex(e => new { e.DeviceType, e.IsActive });
                 
                 // Configure foreign key relationship
-                entity.HasOne<User>()
+                entity.HasOne(e => e.User)
                     .WithMany()
                     .HasForeignKey(e => e.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
