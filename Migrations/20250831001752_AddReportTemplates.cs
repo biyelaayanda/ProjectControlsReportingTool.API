@@ -11,11 +11,6 @@ namespace ProjectControlsReportingTool.API.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.RenameColumn(
-                name: "ExecutiveApprovedDate",
-                table: "Reports",
-                newName: "GMApprovedDate");
-
             migrationBuilder.AddColumn<Guid>(
                 name: "TemplateId",
                 table: "Reports",
@@ -103,11 +98,6 @@ namespace ProjectControlsReportingTool.API.Migrations
             migrationBuilder.DropColumn(
                 name: "TemplateId",
                 table: "Reports");
-
-            migrationBuilder.RenameColumn(
-                name: "GMApprovedDate",
-                table: "Reports",
-                newName: "ExecutiveApprovedDate");
         }
     }
 }
