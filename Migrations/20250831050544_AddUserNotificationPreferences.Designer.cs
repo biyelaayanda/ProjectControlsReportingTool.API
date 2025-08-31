@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ProjectControlsReportingTool.API.Data;
 
@@ -11,9 +12,11 @@ using ProjectControlsReportingTool.API.Data;
 namespace ProjectControlsReportingTool.API.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250831050544_AddUserNotificationPreferences")]
+    partial class AddUserNotificationPreferences
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -147,117 +150,6 @@ namespace ProjectControlsReportingTool.API.Migrations
                     b.HasIndex("Status", "ScheduledDate");
 
                     b.ToTable("EmailQueue");
-                });
-
-            modelBuilder.Entity("ProjectControlsReportingTool.API.Models.Entities.EmailTemplate", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Category")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
-
-                    b.Property<Guid>("CreatedBy")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("HtmlContent")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsDefault")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsSystemTemplate")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime>("LastUsed")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("PlainTextContent")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PreviewData")
-                        .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<string>("Subject")
-                        .IsRequired()
-                        .HasMaxLength(300)
-                        .HasColumnType("nvarchar(300)");
-
-                    b.Property<string>("TemplateType")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("UsageCount")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Variables")
-                        .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
-
-                    b.Property<int>("Version")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Category");
-
-                    b.HasIndex("CreatedAt");
-
-                    b.HasIndex("CreatedBy");
-
-                    b.HasIndex("IsActive");
-
-                    b.HasIndex("IsSystemTemplate");
-
-                    b.HasIndex("LastUsed");
-
-                    b.HasIndex("Name")
-                        .IsUnique();
-
-                    b.HasIndex("TemplateType");
-
-                    b.HasIndex("UpdatedBy");
-
-                    b.HasIndex("UsageCount");
-
-                    b.HasIndex("Version");
-
-                    b.ToTable("EmailTemplates");
                 });
 
             modelBuilder.Entity("ProjectControlsReportingTool.API.Models.Entities.Notification", b =>
@@ -1035,24 +927,6 @@ namespace ProjectControlsReportingTool.API.Migrations
                         .HasForeignKey("NotificationId");
 
                     b.Navigation("Notification");
-                });
-
-            modelBuilder.Entity("ProjectControlsReportingTool.API.Models.Entities.EmailTemplate", b =>
-                {
-                    b.HasOne("ProjectControlsReportingTool.API.Models.Entities.User", "Creator")
-                        .WithMany()
-                        .HasForeignKey("CreatedBy")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("ProjectControlsReportingTool.API.Models.Entities.User", "LastUpdater")
-                        .WithMany()
-                        .HasForeignKey("UpdatedBy")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("Creator");
-
-                    b.Navigation("LastUpdater");
                 });
 
             modelBuilder.Entity("ProjectControlsReportingTool.API.Models.Entities.Notification", b =>

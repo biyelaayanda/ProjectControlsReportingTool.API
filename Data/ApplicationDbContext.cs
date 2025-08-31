@@ -25,6 +25,12 @@ namespace ProjectControlsReportingTool.API.Data
         public DbSet<NotificationHistory> NotificationHistories { get; set; }
         public DbSet<EmailQueue> EmailQueues { get; set; }
         public DbSet<NotificationSubscription> NotificationSubscriptions { get; set; }
+        
+        // User notification preferences
+        public DbSet<UserNotificationPreference> UserNotificationPreferences { get; set; }
+        
+        // Email template management
+        public DbSet<EmailTemplate> EmailTemplates { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -213,6 +219,59 @@ namespace ProjectControlsReportingTool.API.Data
                 entity.Property(e => e.CreatedDate).HasDefaultValueSql("GETUTCDATE()");
                 entity.HasIndex(e => e.WebhookUrl).IsUnique();
                 entity.HasIndex(e => e.IsActive);
+            });
+
+            // Configure UserNotificationPreference entity
+            modelBuilder.Entity<UserNotificationPreference>(entity =>
+            {
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
+                
+                // Create unique constraint for UserId + NotificationType
+                entity.HasIndex(e => new { e.UserId, e.NotificationType }).IsUnique();
+                
+                // Create indexes for common queries
+                entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => e.NotificationType);
+                entity.HasIndex(e => e.EmailEnabled);
+                entity.HasIndex(e => e.RealTimeEnabled);
+                
+                // Configure foreign key relationship
+                entity.HasOne(e => e.User)
+                    .WithMany()
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // Configure EmailTemplate entity
+            modelBuilder.Entity<EmailTemplate>(entity =>
+            {
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
+                
+                // Create unique constraint for template name
+                entity.HasIndex(e => e.Name).IsUnique();
+                
+                // Create indexes for common queries
+                entity.HasIndex(e => e.TemplateType);
+                entity.HasIndex(e => e.Category);
+                entity.HasIndex(e => e.IsActive);
+                entity.HasIndex(e => e.IsSystemTemplate);
+                entity.HasIndex(e => e.Version);
+                entity.HasIndex(e => e.UsageCount);
+                entity.HasIndex(e => e.LastUsed);
+                entity.HasIndex(e => e.CreatedAt);
+                
+                // Configure foreign key relationships
+                entity.HasOne(e => e.Creator)
+                    .WithMany()
+                    .HasForeignKey(e => e.CreatedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+                    
+                entity.HasOne(e => e.LastUpdater)
+                    .WithMany()
+                    .HasForeignKey(e => e.UpdatedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
             // Seed initial data

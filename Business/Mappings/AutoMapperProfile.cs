@@ -61,6 +61,30 @@ namespace ProjectControlsReportingTool.API.Business.Mappings
                     src.UploadedByUser != null ? $"{src.UploadedByUser.FirstName} {src.UploadedByUser.LastName}" : "Unknown"))
                 .ForMember(dest => dest.ApprovalStageName, opt => opt.MapFrom(src => src.ApprovalStage.ToString()))
                 .ForMember(dest => dest.UploadedByRoleName, opt => opt.MapFrom(src => src.UploadedByRole.ToString()));
+
+            // EmailTemplate mappings
+            CreateMap<EmailTemplate, EmailTemplateDto>()
+                .ForMember(dest => dest.CreatedByName, opt => opt.MapFrom(src => src.Creator != null ? $"{src.Creator.FirstName} {src.Creator.LastName}" : "System"))
+                .ForMember(dest => dest.UpdatedByName, opt => opt.MapFrom(src => src.LastUpdater != null ? $"{src.LastUpdater.FirstName} {src.LastUpdater.LastName}" : "System"))
+                .ForMember(dest => dest.Variables, opt => opt.MapFrom(src => src.GetVariableNames()))
+                .ForMember(dest => dest.PreviewData, opt => opt.MapFrom(src => src.GetPreviewData()));
+
+            CreateMap<CreateEmailTemplateDto, EmailTemplate>()
+                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => Guid.NewGuid()))
+                .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => true))
+                .ForMember(dest => dest.IsSystemTemplate, opt => opt.MapFrom(src => false))
+                .ForMember(dest => dest.IsDefault, opt => opt.MapFrom(src => false))
+                .ForMember(dest => dest.Version, opt => opt.MapFrom(src => 1))
+                .ForMember(dest => dest.UsageCount, opt => opt.MapFrom(src => 0))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.UtcNow))
+                .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => DateTime.UtcNow));
+
+            CreateMap<UpdateEmailTemplateDto, EmailTemplate>()
+                .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => DateTime.UtcNow))
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+
+            CreateMap<EmailTemplateDto, CreateEmailTemplateDto>();
+            CreateMap<EmailTemplateDto, UpdateEmailTemplateDto>();
         }
 
         private static string GetDepartmentName(Department department)

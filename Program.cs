@@ -7,7 +7,9 @@ using ProjectControlsReportingTool.API.Business.AppSettings;
 using ProjectControlsReportingTool.API.Repositories.Interfaces;
 using ProjectControlsReportingTool.API.Repositories.Base;
 using ProjectControlsReportingTool.API.Repositories.Implementations;
+using ProjectControlsReportingTool.API.Repositories;
 using ProjectControlsReportingTool.API.Business.Interfaces;
+using RazorLight;
 using ProjectControlsReportingTool.API.Business.Services;
 using ProjectControlsReportingTool.API.Middleware;
 using ProjectControlsReportingTool.API.Hubs;
@@ -55,6 +57,22 @@ void SetupDependencyInjection(WebApplicationBuilder webApplicationBuilder)
     
     // Real-time notification service
     webApplicationBuilder.Services.AddScoped<IRealTimeNotificationService, RealTimeNotificationService>();
+    
+    // Phase 11.3: User Notification Preferences
+    webApplicationBuilder.Services.AddScoped<IUserNotificationPreferenceService, UserNotificationPreferenceService>();
+    webApplicationBuilder.Services.AddScoped<IUserNotificationPreferenceRepository, UserNotificationPreferenceRepository>();
+    
+    // Phase 11.3: Email Template Management
+    webApplicationBuilder.Services.AddScoped<IEmailTemplateService, EmailTemplateService>();
+    webApplicationBuilder.Services.AddScoped<IEmailTemplateRepository, EmailTemplateRepository>();
+    
+    // RazorLight for email template rendering
+    webApplicationBuilder.Services.AddSingleton<IRazorLightEngine>(provider =>
+    {
+        return new RazorLightEngineBuilder()
+            .UseMemoryCachingProvider()
+            .Build();
+    });
 }
 
 // Add services to the container
