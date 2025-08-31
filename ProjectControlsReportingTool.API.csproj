@@ -38,6 +38,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.3" />
+    <PackageReference Include="WebPush" Version="1.0.11" />
     
     <PackageReference Include="iTextSharp.LGPLv2.Core" Version="3.4.21" />
     <PackageReference Include="EPPlus" Version="7.2.1" />

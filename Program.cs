@@ -20,6 +20,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 builder.Services.Configure<FileStorageSettings>(builder.Configuration.GetSection("FileStorage"));
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+builder.Services.Configure<PushNotificationOptions>(builder.Configuration.GetSection("PushNotificationSettings"));
 
 // Configure Caching - Use in-memory cache for now (Redis can be configured later)
 builder.Services.AddMemoryCache();
@@ -65,6 +66,9 @@ void SetupDependencyInjection(WebApplicationBuilder webApplicationBuilder)
     // Phase 11.3: Email Template Management
     webApplicationBuilder.Services.AddScoped<IEmailTemplateService, EmailTemplateService>();
     webApplicationBuilder.Services.AddScoped<IEmailTemplateRepository, EmailTemplateRepository>();
+    
+    // Phase 11.3: Push Notifications
+    webApplicationBuilder.Services.AddScoped<IPushNotificationService, PushNotificationService>();
     
     // RazorLight for email template rendering
     webApplicationBuilder.Services.AddSingleton<IRazorLightEngine>(provider =>

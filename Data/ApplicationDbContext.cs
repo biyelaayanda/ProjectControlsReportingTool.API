@@ -31,6 +31,9 @@ namespace ProjectControlsReportingTool.API.Data
         
         // Email template management
         public DbSet<EmailTemplate> EmailTemplates { get; set; }
+        
+        // Push notification management
+        public DbSet<PushNotificationSubscription> PushNotificationSubscriptions { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -272,6 +275,32 @@ namespace ProjectControlsReportingTool.API.Data
                     .WithMany()
                     .HasForeignKey(e => e.UpdatedBy)
                     .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // Configure PushNotificationSubscription entity
+            modelBuilder.Entity<PushNotificationSubscription>(entity =>
+            {
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
+                
+                // Create unique constraint for endpoint to prevent duplicates
+                entity.HasIndex(e => e.Endpoint).IsUnique();
+                
+                // Create indexes for common queries
+                entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => e.DeviceType);
+                entity.HasIndex(e => e.IsActive);
+                entity.HasIndex(e => e.HasPermission);
+                entity.HasIndex(e => e.LastUsed);
+                entity.HasIndex(e => e.ExpiresAt);
+                entity.HasIndex(e => new { e.UserId, e.IsActive });
+                entity.HasIndex(e => new { e.DeviceType, e.IsActive });
+                
+                // Configure foreign key relationship
+                entity.HasOne<User>()
+                    .WithMany()
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             // Seed initial data

@@ -85,6 +85,18 @@ namespace ProjectControlsReportingTool.API.Business.Mappings
 
             CreateMap<EmailTemplateDto, CreateEmailTemplateDto>();
             CreateMap<EmailTemplateDto, UpdateEmailTemplateDto>();
+
+            // Push Notification mappings
+            CreateMap<PushNotificationSubscription, PushNotificationSubscriptionDto>();
+
+            CreateMap<CreatePushNotificationSubscriptionDto, PushNotificationSubscription>()
+                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => Guid.NewGuid()))
+                .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => true))
+                .ForMember(dest => dest.HasPermission, opt => opt.MapFrom(src => true))
+                .ForMember(dest => dest.SuccessfulNotifications, opt => opt.MapFrom(src => 0))
+                .ForMember(dest => dest.FailedNotifications, opt => opt.MapFrom(src => 0))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.UtcNow))
+                .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => DateTime.UtcNow));
         }
 
         private static string GetDepartmentName(Department department)
