@@ -1,26 +1,99 @@
-Build started...
-Build succeeded.
-warn: Microsoft.EntityFrameworkCore.Model.Validation[10625]
-      The foreign key property 'PushNotificationSubscription.UserId1' was created in shadow state because a conflicting property with the simple name 'UserId' exists in the entity type, but is either not mapped, is already used for another relationship, or is incompatible with the associated primary key type. See https://aka.ms/efcore-relationships for information on mapping relationships in EF Core.  
-info: Microsoft.EntityFrameworkCore.Database.Command[20101]
-      Executed DbCommand (18ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
-      SELECT 1
-info: Microsoft.EntityFrameworkCore.Database.Command[20101]
-      Executed DbCommand (14ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
-      SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
-info: Microsoft.EntityFrameworkCore.Database.Command[20101]
-      Executed DbCommand (2ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
-      SELECT [MigrationId], [ProductVersion]
-      FROM [__EFMigrationsHistory]
-      ORDER BY [MigrationId];
-20250811231437_InitialCreate
-20250811231601_FixDynamicSeedData
-20250812190154_AddReportTypeAndPriorityAndDueDate
-20250814144515_AddApprovalStageToAttachments
-20250831001752_AddReportTemplates (Pending)
-20250831050544_AddUserNotificationPreferences (Pending)
-20250831053326_AddEmailTemplate (Pending)
-20250831105533_AddPushNotificationSubscription (Pending)
-20250831112701_AddSmsEntities (Pending)
-20250831115207_TeamsIntegration (Pending)
-20250831122216_AddTeamsAndSlackIntegrationEntities (Pending)
+info: Microsoft.EntityFrameworkCore.Migrations[20402]
+      Applying migration '20250831105533_AddPushNotificationSubscription'.
+Applying migration '20250831105533_AddPushNotificationSubscription'.
+fail: Microsoft.EntityFrameworkCore.Database.Command[20102]
+      Failed executing DbCommand (25ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE TABLE [PushNotificationSubscriptions] (
+          [Id] uniqueidentifier NOT NULL,
+          [UserId] uniqueidentifier NOT NULL,
+          [Endpoint] nvarchar(500) NOT NULL,
+          [P256dhKey] nvarchar(200) NOT NULL,
+          [AuthToken] nvarchar(200) NOT NULL,
+          [UserAgent] nvarchar(500) NULL,
+          [DeviceType] nvarchar(50) NOT NULL,
+          [DeviceName] nvarchar(200) NULL,
+          [IsActive] bit NOT NULL,
+          [LastUsed] datetime2 NULL,
+          [SuccessfulNotifications] int NOT NULL,
+          [FailedNotifications] int NOT NULL,
+          [LastError] nvarchar(1000) NULL,
+          [ExpiresAt] datetime2 NULL,
+          [IpAddress] nvarchar(45) NULL,
+          [BrowserInfo] nvarchar(200) NULL,
+          [OperatingSystem] nvarchar(100) NULL,
+          [HasPermission] bit NOT NULL,
+          [EnabledForReports] bit NOT NULL,
+          [EnabledForApprovals] bit NOT NULL,
+          [EnabledForDeadlines] bit NOT NULL,
+          [EnabledForAnnouncements] bit NOT NULL,
+          [EnabledForMentions] bit NOT NULL,
+          [EnabledForReminders] bit NOT NULL,
+          [MinimumPriority] nvarchar(20) NOT NULL,
+          [UserId1] uniqueidentifier NOT NULL,
+          [CreatedAt] datetime2 NOT NULL DEFAULT (GETUTCDATE()),
+          [UpdatedAt] datetime2 NOT NULL DEFAULT (GETUTCDATE()),
+          CONSTRAINT [PK_PushNotificationSubscriptions] PRIMARY KEY ([Id]),
+          CONSTRAINT [FK_PushNotificationSubscriptions_Users_UserId] FOREIGN KEY ([UserId]) REFERENCES [Users] ([Id]) ON DELETE CASCADE,
+          CONSTRAINT [FK_PushNotificationSubscriptions_Users_UserId1] FOREIGN KEY ([UserId1]) REFERENCES [Users] ([Id]) ON DELETE CASCADE
+      );
+Failed executing DbCommand (25ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+CREATE TABLE [PushNotificationSubscriptions] (
+    [Id] uniqueidentifier NOT NULL,
+    [UserId] uniqueidentifier NOT NULL,
+    [Endpoint] nvarchar(500) NOT NULL,
+    [P256dhKey] nvarchar(200) NOT NULL,
+    [AuthToken] nvarchar(200) NOT NULL,
+    [UserAgent] nvarchar(500) NULL,
+    [DeviceType] nvarchar(50) NOT NULL,
+    [DeviceName] nvarchar(200) NULL,
+    [IsActive] bit NOT NULL,
+    [LastUsed] datetime2 NULL,
+    [SuccessfulNotifications] int NOT NULL,
+    [FailedNotifications] int NOT NULL,
+    [LastError] nvarchar(1000) NULL,
+    [ExpiresAt] datetime2 NULL,
+    [IpAddress] nvarchar(45) NULL,
+    [BrowserInfo] nvarchar(200) NULL,
+    [OperatingSystem] nvarchar(100) NULL,
+    [HasPermission] bit NOT NULL,
+    [EnabledForReports] bit NOT NULL,
+    [EnabledForApprovals] bit NOT NULL,
+    [EnabledForDeadlines] bit NOT NULL,
+    [EnabledForAnnouncements] bit NOT NULL,
+    [EnabledForMentions] bit NOT NULL,
+    [EnabledForReminders] bit NOT NULL,
+    [MinimumPriority] nvarchar(20) NOT NULL,
+    [UserId1] uniqueidentifier NOT NULL,
+    [CreatedAt] datetime2 NOT NULL DEFAULT (GETUTCDATE()),
+    [UpdatedAt] datetime2 NOT NULL DEFAULT (GETUTCDATE()),
+    CONSTRAINT [PK_PushNotificationSubscriptions] PRIMARY KEY ([Id]),
+    CONSTRAINT [FK_PushNotificationSubscriptions_Users_UserId] FOREIGN KEY ([UserId]) REFERENCES [Users] ([Id]) ON DELETE CASCADE,     
+    CONSTRAINT [FK_PushNotificationSubscriptions_Users_UserId1] FOREIGN KEY ([UserId1]) REFERENCES [Users] ([Id]) ON DELETE CASCADE    
+);
+Microsoft.Data.SqlClient.SqlException (0x80131904): Introducing FOREIGN KEY constraint 'FK_PushNotificationSubscriptions_Users_UserId1' on table 'PushNotificationSubscriptions' may cause cycles or multiple cascade paths. Specify ON DELETE NO ACTION or ON UPDATE NO ACTION, or modify other FOREIGN KEY constraints.
+Could not create constraint or index. See previous errors.
+   at Microsoft.Data.SqlClient.SqlConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)      
+   at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, Boolean callerHasConnectionLock, Boolean asyncClose)
+   at Microsoft.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean& dataReady)
+   at Microsoft.Data.SqlClient.SqlCommand.RunExecuteNonQueryTds(String methodName, Boolean isAsync, Int32 timeout, Boolean asyncWrite) 
+   at Microsoft.Data.SqlClient.SqlCommand.InternalExecuteNonQuery(TaskCompletionSource`1 completion, Boolean sendToPipe, Int32 timeout, Boolean& usedCache, Boolean asyncWrite, Boolean inRetry, String methodName)
+   at Microsoft.Data.SqlClient.SqlCommand.ExecuteNonQuery()
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteNonQuery(RelationalCommandParameterObject parameterObject)        
+   at Microsoft.EntityFrameworkCore.Migrations.MigrationCommand.ExecuteNonQuery(IRelationalConnection connection, IReadOnlyDictionary`2 parameterValues)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.MigrationCommandExecutor.Execute(IReadOnlyList`1 migrationCommands, IRelationalConnection connection, MigrationExecutionState executionState, Boolean beginTransaction, Boolean commitTransaction, Nullable`1 isolationLevel)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.MigrationCommandExecutor.<>c.<ExecuteNonQuery>b__3_1(DbContext _, ValueTuple`6 s)
+   at Microsoft.EntityFrameworkCore.SqlServer.Storage.Internal.SqlServerExecutionStrategy.Execute[TState,TResult](TState state, Func`3 operation, Func`3 verifySucceeded)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.MigrationCommandExecutor.ExecuteNonQuery(IReadOnlyList`1 migrationCommands, IRelationalConnection connection, MigrationExecutionState executionState, Boolean commitTransaction, Nullable`1 isolationLevel)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.MigrateImplementation(DbContext context, String targetMigration, MigrationExecutionState state, Boolean useTransaction)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.<>c.<Migrate>b__20_1(DbContext c, ValueTuple`4 s)
+   at Microsoft.EntityFrameworkCore.SqlServer.Storage.Internal.SqlServerExecutionStrategy.Execute[TState,TResult](TState state, Func`3 operation, Func`3 verifySucceeded)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.Migrate(String targetMigration)
+   at Microsoft.EntityFrameworkCore.Design.Internal.MigrationsOperations.UpdateDatabase(String targetMigration, String connectionString, String contextType)
+   at Microsoft.EntityFrameworkCore.Design.OperationExecutor.UpdateDatabaseImpl(String targetMigration, String connectionString, String contextType)
+   at Microsoft.EntityFrameworkCore.Design.OperationExecutor.UpdateDatabase.<>c__DisplayClass0_0.<.ctor>b__0()
+   at Microsoft.EntityFrameworkCore.Design.OperationExecutor.OperationBase.Execute(Action action)
+ClientConnectionId:32bced98-b73c-4964-a2c4-475ad7eadd33
+Error Number:1785,State:0,Class:16
+Introducing FOREIGN KEY constraint 'FK_PushNotificationSubscriptions_Users_UserId1' on table 'PushNotificationSubscriptions' may cause cycles or multiple cascade paths. Specify ON DELETE NO ACTION or ON UPDATE NO ACTION, or modify other FOREIGN KEY constraints.
+Could not create constraint or index. See previous errors.
