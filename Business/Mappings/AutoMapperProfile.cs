@@ -97,6 +97,26 @@ namespace ProjectControlsReportingTool.API.Business.Mappings
                 .ForMember(dest => dest.FailedNotifications, opt => opt.MapFrom(src => 0))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.UtcNow))
                 .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => DateTime.UtcNow));
+
+            // SMS mappings
+            CreateMap<SmsMessage, SmsMessageDto>()
+                .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.User != null ? $"{src.User.FirstName} {src.User.LastName}" : null))
+                .ForMember(dest => dest.RelatedReportTitle, opt => opt.MapFrom(src => src.RelatedReport != null ? src.RelatedReport.Title : null));
+
+            CreateMap<SmsMessage, SmsDeliveryDto>()
+                .ForMember(dest => dest.MessageId, opt => opt.MapFrom(src => src.Id));
+
+            CreateMap<SmsTemplate, SmsTemplateDto>()
+                .ForMember(dest => dest.CreatedByName, opt => opt.MapFrom(src => $"{src.CreatedByUser.FirstName} {src.CreatedByUser.LastName}"))
+                .ForMember(dest => dest.Variables, opt => opt.MapFrom(src => src.VariablesList));
+
+            CreateMap<CreateSmsTemplateDto, SmsTemplate>()
+                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => Guid.NewGuid()))
+                .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => true))
+                .ForMember(dest => dest.IsSystemTemplate, opt => opt.MapFrom(src => false))
+                .ForMember(dest => dest.UsageCount, opt => opt.MapFrom(src => 0))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.UtcNow))
+                .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => DateTime.UtcNow));
         }
 
         private static string GetDepartmentName(Department department)

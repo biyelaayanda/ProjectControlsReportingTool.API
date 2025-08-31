@@ -34,6 +34,11 @@ namespace ProjectControlsReportingTool.API.Data
         
         // Push notification management
         public DbSet<PushNotificationSubscription> PushNotificationSubscriptions { get; set; }
+        
+        // SMS management
+        public DbSet<SmsMessage> SmsMessages { get; set; }
+        public DbSet<SmsTemplate> SmsTemplates { get; set; }
+        public DbSet<SmsStatistic> SmsStatistics { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -301,6 +306,62 @@ namespace ProjectControlsReportingTool.API.Data
                     .WithMany()
                     .HasForeignKey(e => e.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // Configure SMS entities
+            modelBuilder.Entity<SmsMessage>(entity =>
+            {
+                entity.HasIndex(e => e.Recipient);
+                entity.HasIndex(e => e.Status);
+                entity.HasIndex(e => e.SentAt);
+                entity.HasIndex(e => e.ExternalMessageId);
+                entity.HasIndex(e => e.BatchId);
+                entity.HasIndex(e => new { e.UserId, e.SentAt });
+                entity.HasIndex(e => new { e.Status, e.IsUrgent });
+                entity.HasIndex(e => new { e.Provider, e.SentAt });
+                
+                // Configure foreign key relationships
+                entity.HasOne(s => s.User)
+                    .WithMany()
+                    .HasForeignKey(s => s.UserId)
+                    .OnDelete(DeleteBehavior.SetNull);
+                    
+                entity.HasOne(s => s.RelatedReport)
+                    .WithMany()
+                    .HasForeignKey(s => s.RelatedReportId)
+                    .OnDelete(DeleteBehavior.SetNull);
+                    
+                entity.HasOne(s => s.Template)
+                    .WithMany(t => t.SmsMessages)
+                    .HasForeignKey(s => s.TemplateId)
+                    .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            modelBuilder.Entity<SmsTemplate>(entity =>
+            {
+                entity.HasIndex(e => e.Name).IsUnique();
+                entity.HasIndex(e => e.Category);
+                entity.HasIndex(e => e.IsActive);
+                entity.HasIndex(e => e.IsSystemTemplate);
+                entity.HasIndex(e => new { e.Category, e.IsActive });
+                
+                // Configure foreign key relationships
+                entity.HasOne(t => t.CreatedByUser)
+                    .WithMany()
+                    .HasForeignKey(t => t.CreatedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+                    
+                entity.HasOne(t => t.UpdatedByUser)
+                    .WithMany()
+                    .HasForeignKey(t => t.UpdatedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<SmsStatistic>(entity =>
+            {
+                entity.HasIndex(e => e.Date);
+                entity.HasIndex(e => e.Provider);
+                entity.HasIndex(e => new { e.Date, e.Provider }).IsUnique();
             });
 
             // Seed initial data

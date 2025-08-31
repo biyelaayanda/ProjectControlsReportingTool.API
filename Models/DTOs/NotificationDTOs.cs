@@ -177,7 +177,7 @@ namespace ProjectControlsReportingTool.API.Models.DTOs
         public bool SendWebhook { get; set; } = false;
         public EmailOptions? EmailOptions { get; set; }
         public PushOptions? PushOptions { get; set; }
-        public SmsOptions? SmsOptions { get; set; }
+        public NotificationSmsOptions? SmsOptions { get; set; }
     }
 
     /// <summary>
@@ -210,9 +210,9 @@ namespace ProjectControlsReportingTool.API.Models.DTOs
     }
 
     /// <summary>
-    /// DTO for SMS options
+    /// DTO for SMS options in notifications
     /// </summary>
-    public class SmsOptions
+    public class NotificationSmsOptions
     {
         public string? PhoneNumber { get; set; }
         public string? Message { get; set; }

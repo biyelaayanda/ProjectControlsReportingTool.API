@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using ProjectControlsReportingTool.API.Data;
 using ProjectControlsReportingTool.API.Business.AppSettings;
+using ProjectControlsReportingTool.API.Business.Models;
 using ProjectControlsReportingTool.API.Repositories.Interfaces;
 using ProjectControlsReportingTool.API.Repositories.Base;
 using ProjectControlsReportingTool.API.Repositories.Implementations;
@@ -21,6 +22,7 @@ builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSet
 builder.Services.Configure<FileStorageSettings>(builder.Configuration.GetSection("FileStorage"));
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.Configure<PushNotificationOptions>(builder.Configuration.GetSection("PushNotificationSettings"));
+builder.Services.Configure<SmsOptions>(builder.Configuration.GetSection("SmsSettings"));
 
 // Configure Caching - Use in-memory cache for now (Redis can be configured later)
 builder.Services.AddMemoryCache();
@@ -69,6 +71,9 @@ void SetupDependencyInjection(WebApplicationBuilder webApplicationBuilder)
     
     // Phase 11.3: Push Notifications
     webApplicationBuilder.Services.AddScoped<IPushNotificationService, PushNotificationService>();
+    
+    // Phase 11.3: SMS Integration
+    webApplicationBuilder.Services.AddScoped<ISmsService, SmsService>();
     
     // RazorLight for email template rendering
     webApplicationBuilder.Services.AddSingleton<IRazorLightEngine>(provider =>
