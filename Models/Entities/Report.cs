@@ -59,12 +59,17 @@ namespace ProjectControlsReportingTool.API.Models.Entities
 
         public Department Department { get; set; }
 
+        public Guid? TemplateId { get; set; }
+
         // Navigation properties
         [ForeignKey("CreatedBy")]
         public virtual User Creator { get; set; } = null!;
 
         [ForeignKey("RejectedBy")]
         public virtual User? RejectedByUser { get; set; }
+
+        [ForeignKey("TemplateId")]
+        public virtual ReportTemplate? Template { get; set; }
 
         public virtual ICollection<ReportSignature> Signatures { get; set; } = new List<ReportSignature>();
         public virtual ICollection<ReportAttachment> Attachments { get; set; } = new List<ReportAttachment>();

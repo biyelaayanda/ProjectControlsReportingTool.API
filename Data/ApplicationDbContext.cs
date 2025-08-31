@@ -13,6 +13,7 @@ namespace ProjectControlsReportingTool.API.Data
         // DbSets
         public DbSet<User> Users { get; set; }
         public DbSet<Report> Reports { get; set; }
+        public DbSet<ReportTemplate> ReportTemplates { get; set; }
         public DbSet<ReportSignature> ReportSignatures { get; set; }
         public DbSet<ReportAttachment> ReportAttachments { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
@@ -47,6 +48,29 @@ namespace ProjectControlsReportingTool.API.Data
                 entity.HasOne(r => r.RejectedByUser)
                     .WithMany()
                     .HasForeignKey(r => r.RejectedBy)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasOne(r => r.Template)
+                    .WithMany(t => t.ReportsCreatedFromTemplate)
+                    .HasForeignKey(r => r.TemplateId)
+                    .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            // Configure ReportTemplate entity
+            modelBuilder.Entity<ReportTemplate>(entity =>
+            {
+                entity.Property(e => e.DefaultDepartment).HasConversion<int>();
+                entity.Property(e => e.CreatedDate).HasDefaultValueSql("GETUTCDATE()");
+                entity.Property(e => e.LastModifiedDate).HasDefaultValueSql("GETUTCDATE()");
+
+                entity.HasOne(rt => rt.Creator)
+                    .WithMany()
+                    .HasForeignKey(rt => rt.CreatedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(rt => rt.LastModifiedByUser)
+                    .WithMany()
+                    .HasForeignKey(rt => rt.LastModifiedBy)
                     .OnDelete(DeleteBehavior.SetNull);
             });
 

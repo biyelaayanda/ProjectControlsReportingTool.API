@@ -28,11 +28,13 @@ void SetupDependencyInjection(WebApplicationBuilder webApplicationBuilder)
     webApplicationBuilder.Services.AddScoped<IUserRepository, UserRepository>();
     webApplicationBuilder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
     webApplicationBuilder.Services.AddScoped<IReportRepository, ReportRepository>();
+    webApplicationBuilder.Services.AddScoped<IReportTemplateRepository, ReportTemplateRepository>();
     
     // Business services
     webApplicationBuilder.Services.AddScoped<IUserService, UserService>();
     webApplicationBuilder.Services.AddScoped<IReportService, ReportService>();
     webApplicationBuilder.Services.AddScoped<IAuthService, AuthService>();
+    webApplicationBuilder.Services.AddScoped<IReportTemplateService, ReportTemplateService>();
 }
 
 // Add services to the container

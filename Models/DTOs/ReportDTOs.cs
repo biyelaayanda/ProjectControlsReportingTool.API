@@ -220,4 +220,153 @@ namespace ProjectControlsReportingTool.API.Models.DTOs
             return new ServiceResultDto { Success = false, ErrorMessage = errorMessage };
         }
     }
+
+    // Report Template DTOs
+    public class CreateReportTemplateDto
+    {
+        [Required]
+        [StringLength(200)]
+        public string Name { get; set; } = string.Empty;
+
+        [StringLength(500)]
+        public string? Description { get; set; }
+
+        [Required]
+        public string ContentTemplate { get; set; } = string.Empty;
+
+        [StringLength(100)]
+        public string? Type { get; set; }
+
+        [StringLength(20)]
+        public string DefaultPriority { get; set; } = "Medium";
+
+        public Department? DefaultDepartment { get; set; }
+
+        [StringLength(500)]
+        public string? Tags { get; set; }
+
+        public int SortOrder { get; set; } = 0;
+
+        [StringLength(200)]
+        public string? DefaultTitle { get; set; }
+
+        public int? DefaultDueDays { get; set; }
+
+        [StringLength(1000)]
+        public string? Instructions { get; set; }
+    }
+
+    public class UpdateReportTemplateDto
+    {
+        [Required]
+        [StringLength(200)]
+        public string Name { get; set; } = string.Empty;
+
+        [StringLength(500)]
+        public string? Description { get; set; }
+
+        [Required]
+        public string ContentTemplate { get; set; } = string.Empty;
+
+        [StringLength(100)]
+        public string? Type { get; set; }
+
+        [StringLength(20)]
+        public string DefaultPriority { get; set; } = "Medium";
+
+        public Department? DefaultDepartment { get; set; }
+
+        public bool IsActive { get; set; } = true;
+
+        [StringLength(500)]
+        public string? Tags { get; set; }
+
+        public int SortOrder { get; set; } = 0;
+
+        [StringLength(200)]
+        public string? DefaultTitle { get; set; }
+
+        public int? DefaultDueDays { get; set; }
+
+        [StringLength(1000)]
+        public string? Instructions { get; set; }
+    }
+
+    public class ReportTemplateDto
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public string ContentTemplate { get; set; } = string.Empty;
+        public string? Type { get; set; }
+        public string DefaultPriority { get; set; } = "Medium";
+        public Department? DefaultDepartment { get; set; }
+        public string DepartmentName { get; set; } = string.Empty;
+        public bool IsActive { get; set; }
+        public bool IsSystemTemplate { get; set; }
+        public bool IsEditable { get; set; }
+        public DateTime CreatedDate { get; set; }
+        public DateTime LastModifiedDate { get; set; }
+        public string CreatorName { get; set; } = string.Empty;
+        public string? LastModifiedByName { get; set; }
+        public string? Tags { get; set; }
+        public List<string> TagList { get; set; } = new List<string>();
+        public int SortOrder { get; set; }
+        public string? DefaultTitle { get; set; }
+        public int? DefaultDueDays { get; set; }
+        public string? Instructions { get; set; }
+        public int UsageCount { get; set; }
+    }
+
+    public class ReportTemplateSummaryDto
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public string? Type { get; set; }
+        public Department? DefaultDepartment { get; set; }
+        public string DepartmentName { get; set; } = string.Empty;
+        public bool IsActive { get; set; }
+        public bool IsSystemTemplate { get; set; }
+        public DateTime CreatedDate { get; set; }
+        public string CreatorName { get; set; } = string.Empty;
+        public List<string> TagList { get; set; } = new List<string>();
+        public int UsageCount { get; set; }
+    }
+
+    public class CreateReportFromTemplateDto
+    {
+        [Required]
+        public Guid TemplateId { get; set; }
+
+        [StringLength(200)]
+        public string? CustomTitle { get; set; }
+
+        [StringLength(500)]
+        public string? CustomDescription { get; set; }
+
+        public DateTime? CustomDueDate { get; set; }
+
+        public Department? CustomDepartment { get; set; }
+
+        [StringLength(20)]
+        public string? CustomPriority { get; set; }
+
+        // Template variable replacements
+        public Dictionary<string, string>? VariableReplacements { get; set; }
+    }
+
+    public class ReportTemplateFilterDto
+    {
+        public string? SearchTerm { get; set; }
+        public string? Type { get; set; }
+        public Department? Department { get; set; }
+        public bool? IsActive { get; set; }
+        public bool? IsSystemTemplate { get; set; }
+        public string? Tag { get; set; }
+        public int PageNumber { get; set; } = 1;
+        public int PageSize { get; set; } = 10;
+        public string? SortBy { get; set; }
+        public bool SortDescending { get; set; } = false;
+    }
 }
