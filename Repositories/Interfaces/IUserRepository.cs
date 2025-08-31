@@ -16,5 +16,6 @@ namespace ProjectControlsReportingTool.API.Repositories.Interfaces
         Task<bool> UpdateUserRoleAsync(Guid userId, UserRole newRole);
         Task<bool> DeactivateUserAsync(Guid userId);
         Task UpdateLastLoginAsync(Guid userId);
+        Task<bool> UpdatePasswordAsync(User user, string newPassword);
     }
 }

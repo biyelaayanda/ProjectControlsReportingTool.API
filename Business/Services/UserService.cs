@@ -248,7 +248,383 @@ namespace ProjectControlsReportingTool.API.Business.Services
             }
         }
 
+        public async Task<BulkOperationResultDto> BulkAssignRoleAsync(BulkRoleAssignmentDto dto)
+        {
+            var result = new BulkOperationResultDto
+            {
+                TotalRequested = dto.UserIds.Count
+            };
+
+            foreach (var userId in dto.UserIds)
+            {
+                try
+                {
+                    var user = await _userRepository.GetByIdAsync(userId);
+                    if (user == null)
+                    {
+                        result.FailedOperations++;
+                        result.ErrorMessages.Add($"User with ID {userId} not found");
+                        continue;
+                    }
+
+                    user.Role = dto.Role;
+                    await _userRepository.UpdateAsync(user);
+
+                    await _auditLogRepository.LogActionAsync(
+                        AuditAction.Updated,
+                        user.Id,
+                        null,
+                        $"Role changed to {dto.Role}"
+                    );
+
+                    result.SuccessfulOperations++;
+                    result.ProcessedUsers.Add(MapUserToDto(user));
+                }
+                catch (Exception ex)
+                {
+                    result.FailedOperations++;
+                    result.ErrorMessages.Add($"Failed to update user {userId}: {ex.Message}");
+                }
+            }
+
+            return result;
+        }
+
+        public async Task<BulkOperationResultDto> BulkChangeDepartmentAsync(BulkDepartmentChangeDto dto)
+        {
+            var result = new BulkOperationResultDto
+            {
+                TotalRequested = dto.UserIds.Count
+            };
+
+            foreach (var userId in dto.UserIds)
+            {
+                try
+                {
+                    var user = await _userRepository.GetByIdAsync(userId);
+                    if (user == null)
+                    {
+                        result.FailedOperations++;
+                        result.ErrorMessages.Add($"User with ID {userId} not found");
+                        continue;
+                    }
+
+                    user.Department = dto.Department;
+                    await _userRepository.UpdateAsync(user);
+
+                    await _auditLogRepository.LogActionAsync(
+                        AuditAction.Updated,
+                        user.Id,
+                        null,
+                        $"Department changed to {dto.Department}"
+                    );
+
+                    result.SuccessfulOperations++;
+                    result.ProcessedUsers.Add(MapUserToDto(user));
+                }
+                catch (Exception ex)
+                {
+                    result.FailedOperations++;
+                    result.ErrorMessages.Add($"Failed to update user {userId}: {ex.Message}");
+                }
+            }
+
+            return result;
+        }
+
+        public async Task<BulkOperationResultDto> BulkActivateDeactivateAsync(BulkActivationDto dto)
+        {
+            var result = new BulkOperationResultDto
+            {
+                TotalRequested = dto.UserIds.Count
+            };
+
+            foreach (var userId in dto.UserIds)
+            {
+                try
+                {
+                    var user = await _userRepository.GetByIdAsync(userId);
+                    if (user == null)
+                    {
+                        result.FailedOperations++;
+                        result.ErrorMessages.Add($"User with ID {userId} not found");
+                        continue;
+                    }
+
+                    user.IsActive = dto.IsActive;
+                    await _userRepository.UpdateAsync(user);
+
+                    await _auditLogRepository.LogActionAsync(
+                        AuditAction.Updated,
+                        user.Id,
+                        null,
+                        $"User {(dto.IsActive ? "activated" : "deactivated")}"
+                    );
+
+                    result.SuccessfulOperations++;
+                    result.ProcessedUsers.Add(MapUserToDto(user));
+                }
+                catch (Exception ex)
+                {
+                    result.FailedOperations++;
+                    result.ErrorMessages.Add($"Failed to update user {userId}: {ex.Message}");
+                }
+            }
+
+            return result;
+        }
+
+        public async Task<BulkOperationResultDto> BulkImportUsersAsync(BulkUserImportDto dto)
+        {
+            var result = new BulkOperationResultDto
+            {
+                TotalRequested = dto.Users.Count
+            };
+
+            foreach (var userImport in dto.Users)
+            {
+                try
+                {
+                    // Check if email already exists
+                    if (await _userRepository.EmailExistsAsync(userImport.Email))
+                    {
+                        result.FailedOperations++;
+                        result.ErrorMessages.Add($"Email {userImport.Email} already exists");
+                        continue;
+                    }
+
+                    // Generate password if not provided
+                    var password = string.IsNullOrEmpty(userImport.Password) 
+                        ? GenerateTemporaryPassword() 
+                        : userImport.Password;
+
+                    var user = new User
+                    {
+                        Id = Guid.NewGuid(),
+                        Email = userImport.Email,
+                        FirstName = userImport.FirstName,
+                        LastName = userImport.LastName,
+                        Role = userImport.Role,
+                        Department = userImport.Department,
+                        PhoneNumber = userImport.PhoneNumber,
+                        JobTitle = userImport.JobTitle,
+                        IsActive = true,
+                        CreatedDate = DateTime.UtcNow
+                    };
+
+                    var createdUser = await _userRepository.CreateUserAsync(user, password);
+
+                    await _auditLogRepository.LogActionAsync(
+                        AuditAction.Created,
+                        createdUser.Id,
+                        null,
+                        "User imported via bulk operation"
+                    );
+
+                    result.SuccessfulOperations++;
+                    result.ProcessedUsers.Add(MapUserToDto(createdUser));
+                }
+                catch (Exception ex)
+                {
+                    result.FailedOperations++;
+                    result.ErrorMessages.Add($"Failed to import user {userImport.Email}: {ex.Message}");
+                }
+            }
+
+            return result;
+        }
+
+        public async Task<PagedResultDto<UserDto>> GetFilteredUsersAsync(UserFilterDto filter)
+        {
+            var users = await _userRepository.GetAllAsync();
+            var query = users.AsQueryable();
+
+            // Apply filters
+            if (!string.IsNullOrWhiteSpace(filter.SearchTerm))
+            {
+                query = query.Where(u => 
+                    u.FirstName.Contains(filter.SearchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    u.LastName.Contains(filter.SearchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    u.Email.Contains(filter.SearchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    (u.JobTitle != null && u.JobTitle.Contains(filter.SearchTerm, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            if (filter.Role.HasValue)
+            {
+                query = query.Where(u => u.Role == filter.Role.Value);
+            }
+
+            if (filter.Department.HasValue)
+            {
+                query = query.Where(u => u.Department == filter.Department.Value);
+            }
+
+            if (filter.IsActive.HasValue)
+            {
+                query = query.Where(u => u.IsActive == filter.IsActive.Value);
+            }
+
+            if (filter.FromDate.HasValue)
+            {
+                query = query.Where(u => u.CreatedDate >= filter.FromDate.Value);
+            }
+
+            if (filter.ToDate.HasValue)
+            {
+                query = query.Where(u => u.CreatedDate <= filter.ToDate.Value);
+            }
+
+            var totalCount = query.Count();
+            var pagedUsers = query
+                .Skip((filter.PageNumber - 1) * filter.PageSize)
+                .Take(filter.PageSize)
+                .Select(MapUserToDto)
+                .ToList();
+
+            return new PagedResultDto<UserDto>
+            {
+                Items = pagedUsers,
+                TotalCount = totalCount,
+                Page = filter.PageNumber,
+                PageSize = filter.PageSize,
+                TotalPages = (int)Math.Ceiling((double)totalCount / filter.PageSize),
+                HasNext = filter.PageNumber < (int)Math.Ceiling((double)totalCount / filter.PageSize),
+                HasPrevious = filter.PageNumber > 1
+            };
+        }
+
+        public async Task<AuthResponseDto> AdminUpdateUserAsync(Guid id, AdminUserUpdateDto dto)
+        {
+            try
+            {
+                var user = await _userRepository.GetByIdAsync(id);
+                if (user == null)
+                {
+                    return new AuthResponseDto
+                    {
+                        Token = string.Empty,
+                        User = null!,
+                        ExpiresAt = DateTime.UtcNow,
+                        ErrorMessage = "User not found"
+                    };
+                }
+
+                // Update user properties (admin can change role and department)
+                user.FirstName = dto.FirstName;
+                user.LastName = dto.LastName;
+                user.Role = dto.Role;
+                user.Department = dto.Department;
+                user.PhoneNumber = dto.PhoneNumber;
+                user.JobTitle = dto.JobTitle;
+                user.IsActive = dto.IsActive;
+
+                await _userRepository.UpdateAsync(user);
+
+                await _auditLogRepository.LogActionAsync(
+                    AuditAction.Updated,
+                    user.Id,
+                    null,
+                    "User updated by administrator"
+                );
+
+                return new AuthResponseDto
+                {
+                    Token = string.Empty,
+                    User = MapUserToDto(user),
+                    ExpiresAt = DateTime.UtcNow
+                };
+            }
+            catch (Exception ex)
+            {
+                return new AuthResponseDto
+                {
+                    Token = string.Empty,
+                    User = null!,
+                    ExpiresAt = DateTime.UtcNow,
+                    ErrorMessage = $"Update failed: {ex.Message}"
+                };
+            }
+        }
+
+        public async Task<AuthResponseDto> ResetUserPasswordAsync(Guid id, string newPassword)
+        {
+            try
+            {
+                var user = await _userRepository.GetByIdAsync(id);
+                if (user == null)
+                {
+                    return new AuthResponseDto
+                    {
+                        Token = string.Empty,
+                        User = null!,
+                        ExpiresAt = DateTime.UtcNow,
+                        ErrorMessage = "User not found"
+                    };
+                }
+
+                await _userRepository.UpdatePasswordAsync(user, newPassword);
+
+                await _auditLogRepository.LogActionAsync(
+                    AuditAction.Updated,
+                    user.Id,
+                    null,
+                    "Password reset by administrator"
+                );
+
+                return new AuthResponseDto
+                {
+                    Token = string.Empty,
+                    User = MapUserToDto(user),
+                    ExpiresAt = DateTime.UtcNow
+                };
+            }
+            catch (Exception ex)
+            {
+                return new AuthResponseDto
+                {
+                    Token = string.Empty,
+                    User = null!,
+                    ExpiresAt = DateTime.UtcNow,
+                    ErrorMessage = $"Password reset failed: {ex.Message}"
+                };
+            }
+        }
+
+        public async Task<bool> DeleteUserPermanentlyAsync(Guid id)
+        {
+            try
+            {
+                var user = await _userRepository.GetByIdAsync(id);
+                if (user == null)
+                {
+                    return false;
+                }
+
+                await _auditLogRepository.LogActionAsync(
+                    AuditAction.Deleted,
+                    user.Id,
+                    null,
+                    "User permanently deleted by administrator"
+                );
+
+                await _userRepository.DeleteAsync(user);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         #region Private Helper Methods
+
+        private static string GenerateTemporaryPassword()
+        {
+            const string chars = "ABCDEFGHJKLMNOPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz0123456789!@#$%";
+            var random = new Random();
+            return new string(Enumerable.Repeat(chars, 12)
+                .Select(s => s[random.Next(s.Length)]).ToArray());
+        }
 
         private string GenerateJwtToken(User user)
         {

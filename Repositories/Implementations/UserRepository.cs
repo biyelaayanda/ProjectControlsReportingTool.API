@@ -119,6 +119,26 @@ namespace ProjectControlsReportingTool.API.Repositories.Implementations
             await _context.Database.ExecuteSqlRawAsync("EXEC UpdateLastLogin @UserId, @LastLoginAt", parameters);
         }
 
+        public async Task<bool> UpdatePasswordAsync(User user, string newPassword)
+        {
+            try
+            {
+                // Generate new salt and hash the password
+                var salt = GenerateSalt();
+                var hashedPassword = HashPasswordWithSalt(newPassword, salt);
+                
+                user.PasswordSalt = salt;
+                user.PasswordHash = hashedPassword;
+                
+                await UpdateAsync(user);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         private string HashPassword(string password)
         {
             using (var sha256 = SHA256.Create())
