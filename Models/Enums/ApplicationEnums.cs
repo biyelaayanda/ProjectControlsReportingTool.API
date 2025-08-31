@@ -54,4 +54,70 @@ namespace ProjectControlsReportingTool.API.Models.Enums
         ManagerReview = 2,     // Uploaded by line manager during approval process
         GMReview = 3    // Uploaded by GM during approval process
     }
+
+    // Phase 8: Notification System Enums
+    public enum NotificationType
+    {
+        ReportSubmitted = 1,
+        ApprovalRequired = 2,
+        ReportApproved = 3,
+        ReportRejected = 4,
+        DueDateReminder = 5,
+        EscalationNotice = 6,
+        SystemAlert = 7,
+        UserWelcome = 8,
+        PasswordReset = 9,
+        AccountActivation = 10,
+        ReportComment = 11,
+        StatusChange = 12,
+        BulkUpdate = 13,
+        MaintenanceNotice = 14,
+        SecurityAlert = 15
+    }
+
+    public enum NotificationPriority
+    {
+        Low = 1,
+        Normal = 2,
+        High = 3,
+        Critical = 4
+    }
+
+    public enum NotificationStatus
+    {
+        Pending = 1,
+        Sent = 2,
+        Delivered = 3,
+        Read = 4,
+        Failed = 5,
+        Cancelled = 6,
+        Expired = 7
+    }
+
+    public enum EmailQueueStatus
+    {
+        Pending = 1,
+        Processing = 2,
+        Sent = 3,
+        Failed = 4,
+        Cancelled = 5,
+        Expired = 6
+    }
+
+    public enum EmailPriority
+    {
+        Low = 1,
+        Normal = 2,
+        High = 3,
+        Urgent = 4
+    }
+
+    public enum NotificationChannel
+    {
+        Email = 1,
+        InApp = 2,
+        Push = 3,
+        SMS = 4,
+        Webhook = 5
+    }
 }

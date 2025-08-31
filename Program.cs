@@ -35,7 +35,7 @@ void SetupDependencyInjection(WebApplicationBuilder webApplicationBuilder)
     webApplicationBuilder.Services.AddScoped<IReportService, ReportService>();
     webApplicationBuilder.Services.AddScoped<IAuthService, AuthService>();
     webApplicationBuilder.Services.AddScoped<IReportTemplateService, ReportTemplateService>();
-    webApplicationBuilder.Services.AddScoped<IExportService, ExportService>(); // Phase 7.2 Export Service
+    webApplicationBuilder.Services.AddScoped<IExportService, ExportService>();
 }
 
 // Add services to the container

@@ -17,6 +17,14 @@ namespace ProjectControlsReportingTool.API.Data
         public DbSet<ReportSignature> ReportSignatures { get; set; }
         public DbSet<ReportAttachment> ReportAttachments { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
+        
+        // Notification entities
+        public DbSet<Notification> Notifications { get; set; }
+        public DbSet<NotificationTemplate> NotificationTemplates { get; set; }
+        public DbSet<NotificationPreference> NotificationPreferences { get; set; }
+        public DbSet<NotificationHistory> NotificationHistories { get; set; }
+        public DbSet<EmailQueue> EmailQueues { get; set; }
+        public DbSet<NotificationSubscription> NotificationSubscriptions { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -122,6 +130,89 @@ namespace ProjectControlsReportingTool.API.Data
                     .WithMany(r => r.AuditLogs)
                     .HasForeignKey(al => al.ReportId)
                     .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            // Configure Notification entity
+            modelBuilder.Entity<Notification>(entity =>
+            {
+                entity.Property(e => e.Type).HasConversion<int>();
+                entity.Property(e => e.Priority).HasConversion<int>();
+                entity.Property(e => e.Status).HasConversion<int>();
+                entity.Property(e => e.CreatedDate).HasDefaultValueSql("GETUTCDATE()");
+
+                entity.HasOne(n => n.Recipient)
+                    .WithMany()
+                    .HasForeignKey(n => n.RecipientId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(n => n.Sender)
+                    .WithMany()
+                    .HasForeignKey(n => n.SenderId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasOne(n => n.RelatedReport)
+                    .WithMany()
+                    .HasForeignKey(n => n.RelatedReportId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasIndex(n => new { n.RecipientId, n.ReadDate });
+                entity.HasIndex(n => new { n.Type, n.CreatedDate });
+                entity.HasIndex(n => n.Status);
+            });
+
+            // Configure NotificationTemplate entity
+            modelBuilder.Entity<NotificationTemplate>(entity =>
+            {
+                entity.Property(e => e.Type).HasConversion<int>();
+                entity.Property(e => e.CreatedDate).HasDefaultValueSql("GETUTCDATE()");
+                entity.HasIndex(e => e.Name).IsUnique();
+                entity.HasIndex(e => new { e.Type, e.IsActive });
+            });
+
+            // Configure NotificationPreference entity
+            modelBuilder.Entity<NotificationPreference>(entity =>
+            {
+                entity.Property(e => e.NotificationType).HasConversion<int>();
+                entity.Property(e => e.CreatedDate).HasDefaultValueSql("GETUTCDATE()");
+
+                entity.HasOne(np => np.User)
+                    .WithMany()
+                    .HasForeignKey(np => np.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(np => new { np.UserId, np.NotificationType }).IsUnique();
+            });
+
+            // Configure NotificationHistory entity
+            modelBuilder.Entity<NotificationHistory>(entity =>
+            {
+                entity.Property(e => e.CreatedDate).HasDefaultValueSql("GETUTCDATE()");
+
+                entity.HasOne(nh => nh.Notification)
+                    .WithMany(n => n.History)
+                    .HasForeignKey(nh => nh.NotificationId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(nh => new { nh.NotificationId, nh.CreatedDate });
+            });
+
+            // Configure EmailQueue entity
+            modelBuilder.Entity<EmailQueue>(entity =>
+            {
+                entity.Property(e => e.Priority).HasConversion<int>();
+                entity.Property(e => e.Status).HasConversion<int>();
+                entity.Property(e => e.CreatedDate).HasDefaultValueSql("GETUTCDATE()");
+
+                entity.HasIndex(e => new { e.Status, e.ScheduledDate });
+                entity.HasIndex(e => e.Priority);
+            });
+
+            // Configure NotificationSubscription entity
+            modelBuilder.Entity<NotificationSubscription>(entity =>
+            {
+                entity.Property(e => e.CreatedDate).HasDefaultValueSql("GETUTCDATE()");
+                entity.HasIndex(e => e.WebhookUrl).IsUnique();
+                entity.HasIndex(e => e.IsActive);
             });
 
             // Seed initial data
