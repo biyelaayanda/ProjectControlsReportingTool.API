@@ -18,6 +18,10 @@ builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSet
 builder.Services.Configure<FileStorageSettings>(builder.Configuration.GetSection("FileStorage"));
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 
+// Configure Caching - Use in-memory cache for now (Redis can be configured later)
+builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<Microsoft.Extensions.Caching.Distributed.IDistributedCache, Microsoft.Extensions.Caching.Distributed.MemoryDistributedCache>();
+
 // Configure dependency injection
 void SetupDependencyInjection(WebApplicationBuilder webApplicationBuilder)
 {
@@ -37,12 +41,20 @@ void SetupDependencyInjection(WebApplicationBuilder webApplicationBuilder)
     webApplicationBuilder.Services.AddScoped<IReportTemplateService, ReportTemplateService>();
     webApplicationBuilder.Services.AddScoped<IExportService, ExportService>();
     
+    // Phase 9: Advanced Features
+    webApplicationBuilder.Services.AddScoped<IComplianceService, ComplianceService_Simple>();
+    webApplicationBuilder.Services.AddScoped<IWebhookService, WebhookService_Simple>();
+    webApplicationBuilder.Services.AddScoped<ICacheService, CacheService>();
+    
     // Analytics data access service
     webApplicationBuilder.Services.AddScoped<IAnalyticsDataAccessService, AnalyticsDataAccessService>();
 }
 
 // Add services to the container
 builder.Services.AddControllers();
+
+// Add HttpClient for webhook service
+builder.Services.AddHttpClient();
 
 // Add Entity Framework
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
