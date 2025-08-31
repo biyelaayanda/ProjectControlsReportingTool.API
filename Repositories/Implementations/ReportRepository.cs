@@ -117,8 +117,6 @@ namespace ProjectControlsReportingTool.API.Repositories.Implementations
 
         public async Task<IEnumerable<Report>> GetCompletedByUserAsync(Guid userId, UserRole userRole)
         {
-            var completedStatus = (int)ReportStatus.Completed;
-
             switch (userRole)
             {
                 case UserRole.GM:
@@ -396,7 +394,7 @@ namespace ProjectControlsReportingTool.API.Repositories.Implementations
                 var success = results.Any() && results[0] > 0;
                 return success;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return false;
             }

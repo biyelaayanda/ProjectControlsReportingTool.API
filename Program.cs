@@ -168,11 +168,18 @@ using (var scope = app.Services.CreateScope())
     try
     {
         context.Database.EnsureCreated();
-        }
-    catch (Exception ex)
+    }
+    catch (Exception)
     {
-        }
+        // Database creation failed - continue without error for now
+    }
 }
 
 app.Run();
+
+// Make Program class accessible for testing
+public partial class Program 
+{
+    protected Program() { }
+}
 

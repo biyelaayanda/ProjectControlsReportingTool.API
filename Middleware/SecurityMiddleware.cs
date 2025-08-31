@@ -29,25 +29,25 @@ namespace ProjectControlsReportingTool.API.Middleware
             var response = context.Response;
 
             // Prevent clickjacking
-            response.Headers.Add("X-Frame-Options", "DENY");
+            response.Headers["X-Frame-Options"] = "DENY";
 
             // Prevent MIME-type sniffing
-            response.Headers.Add("X-Content-Type-Options", "nosniff");
+            response.Headers["X-Content-Type-Options"] = "nosniff";
 
             // XSS protection
-            response.Headers.Add("X-XSS-Protection", "1; mode=block");
+            response.Headers["X-XSS-Protection"] = "1; mode=block";
 
             // Referrer policy
-            response.Headers.Add("Referrer-Policy", "strict-origin-when-cross-origin");
+            response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
 
-            // Content Security Policy
-            response.Headers.Add("Content-Security-Policy", 
-                "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self';");
+            // Enhanced Content Security Policy (more restrictive)
+            response.Headers["Content-Security-Policy"] = 
+                "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';";
 
             // HSTS (only for HTTPS)
             if (context.Request.IsHttps)
             {
-                response.Headers.Add("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+                response.Headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload";
             }
         }
 

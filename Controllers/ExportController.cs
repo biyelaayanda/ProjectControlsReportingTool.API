@@ -115,7 +115,9 @@ namespace ProjectControlsReportingTool.API.Controllers
         {
             try
             {
-                var userId = GetCurrentUserId();
+                // Validate user is authenticated (userId check)
+                _ = GetCurrentUserId(); // Ensure user is authenticated
+                
                 var webRootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "exports");
                 var filePath = Path.Combine(webRootPath, fileName);
 

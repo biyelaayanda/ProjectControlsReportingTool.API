@@ -35,7 +35,7 @@ namespace ProjectControlsReportingTool.API.Middleware
                 if (clientInfo.Requests.Count >= _maxRequests)
                 {
                     context.Response.StatusCode = (int)HttpStatusCode.TooManyRequests;
-                    context.Response.Headers.Add("Retry-After", _timeWindow.TotalSeconds.ToString());
+                    context.Response.Headers["Retry-After"] = _timeWindow.TotalSeconds.ToString();
                     
                     _logger.LogWarning(
                         "Rate limit exceeded for client {ClientId} from IP {IP}",
