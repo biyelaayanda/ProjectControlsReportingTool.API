@@ -369,4 +369,151 @@ namespace ProjectControlsReportingTool.API.Models.DTOs
         public string? SortBy { get; set; }
         public bool SortDescending { get; set; } = false;
     }
+
+    // Statistics DTOs
+    public class ReportStatisticsDto
+    {
+        public OverallStatsDto OverallStats { get; set; } = new();
+        public IEnumerable<DepartmentStatsDto> DepartmentStats { get; set; } = new List<DepartmentStatsDto>();
+        public IEnumerable<StatusStatsDto> StatusStats { get; set; } = new List<StatusStatsDto>();
+        public IEnumerable<PriorityStatsDto> PriorityStats { get; set; } = new List<PriorityStatsDto>();
+        public PerformanceMetricsDto PerformanceMetrics { get; set; } = new();
+        public IEnumerable<TrendDataDto> TrendAnalysis { get; set; } = new List<TrendDataDto>();
+        public UserStatsDto? UserSpecificStats { get; set; }
+    }
+
+    public class OverallStatsDto
+    {
+        public int TotalReports { get; set; }
+        public int TotalDrafts { get; set; }
+        public int TotalSubmitted { get; set; }
+        public int TotalUnderReview { get; set; }
+        public int TotalApproved { get; set; }
+        public int TotalRejected { get; set; }
+        public int TotalOverdue { get; set; }
+        public int TotalThisMonth { get; set; }
+        public int TotalLastMonth { get; set; }
+        public double MonthOverMonthGrowth { get; set; }
+        public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
+    }
+
+    public class DepartmentStatsDto
+    {
+        public Department Department { get; set; }
+        public string DepartmentName { get; set; } = string.Empty;
+        public int TotalReports { get; set; }
+        public int PendingReports { get; set; }
+        public int ApprovedReports { get; set; }
+        public int RejectedReports { get; set; }
+        public int OverdueReports { get; set; }
+        public double AverageCompletionTime { get; set; } // in days
+        public double ApprovalRate { get; set; } // percentage
+        public int ActiveUsers { get; set; }
+    }
+
+    public class StatusStatsDto
+    {
+        public ReportStatus Status { get; set; }
+        public string StatusName { get; set; } = string.Empty;
+        public int Count { get; set; }
+        public double Percentage { get; set; }
+        public double AverageTimeInStatus { get; set; } // in days
+        public int TrendDirection { get; set; } // -1: down, 0: stable, 1: up
+    }
+
+    public class PriorityStatsDto
+    {
+        public string Priority { get; set; } = string.Empty;
+        public int Count { get; set; }
+        public double Percentage { get; set; }
+        public double AverageCompletionTime { get; set; }
+        public int OverdueCount { get; set; }
+    }
+
+    public class PerformanceMetricsDto
+    {
+        public double AverageReportCreationTime { get; set; } // in minutes
+        public double AverageApprovalTime { get; set; } // in days
+        public double AverageReviewCycleTime { get; set; } // in days
+        public double SystemUptime { get; set; } // percentage
+        public int TotalApiCalls { get; set; }
+        public double AverageResponseTime { get; set; } // in milliseconds
+        public int ErrorRate { get; set; } // errors per 1000 requests
+        public double UserSatisfactionScore { get; set; } // 1-5 rating
+        public DateTime MeasurementPeriodStart { get; set; }
+        public DateTime MeasurementPeriodEnd { get; set; }
+    }
+
+    public class TrendDataDto
+    {
+        public DateTime Date { get; set; }
+        public string Period { get; set; } = string.Empty; // "daily", "weekly", "monthly"
+        public int ReportsCreated { get; set; }
+        public int ReportsApproved { get; set; }
+        public int ReportsRejected { get; set; }
+        public int ReportsSubmitted { get; set; }
+        public double AverageProcessingTime { get; set; }
+        public int ActiveUsers { get; set; }
+        public Department? Department { get; set; }
+        public string? Metric { get; set; } // for specific metric tracking
+        public double Value { get; set; } // generic value for metric tracking
+    }
+
+    public class UserStatsDto
+    {
+        public Guid UserId { get; set; }
+        public string UserName { get; set; } = string.Empty;
+        public int MyReportsCount { get; set; }
+        public int MyDraftsCount { get; set; }
+        public int MyPendingApprovals { get; set; }
+        public int MyApprovedReports { get; set; }
+        public int MyRejectedReports { get; set; }
+        public int MyOverdueReports { get; set; }
+        public double MyAverageCompletionTime { get; set; }
+        public double MyApprovalRate { get; set; }
+        public int ReportsReviewedByMe { get; set; } // for managers/GMs
+        public double MyAverageReviewTime { get; set; } // for managers/GMs
+        public int MyTeamReportsCount { get; set; } // for managers
+        public DateTime LastLoginDate { get; set; }
+        public DateTime LastReportCreated { get; set; }
+    }
+
+    public class StatisticsFilterDto
+    {
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+        public Department? Department { get; set; }
+        public Guid? UserId { get; set; }
+        public ReportStatus? Status { get; set; }
+        public string? Priority { get; set; }
+        public string? TrendPeriod { get; set; } = "monthly"; // daily, weekly, monthly, yearly
+        public bool IncludePerformanceMetrics { get; set; } = true;
+        public bool IncludeTrendAnalysis { get; set; } = true;
+        public bool IncludeUserStats { get; set; } = true;
+        public string? MetricType { get; set; } // for specific metric requests
+    }
+
+    public class SystemPerformanceDto
+    {
+        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+        public double CpuUsage { get; set; }
+        public double MemoryUsage { get; set; }
+        public double DatabaseResponseTime { get; set; }
+        public int ActiveConnections { get; set; }
+        public long TotalRequests { get; set; }
+        public int ErrorCount { get; set; }
+        public double ThroughputPerMinute { get; set; }
+        public IEnumerable<EndpointMetricDto> EndpointMetrics { get; set; } = new List<EndpointMetricDto>();
+    }
+
+    public class EndpointMetricDto
+    {
+        public string Endpoint { get; set; } = string.Empty;
+        public string Method { get; set; } = string.Empty;
+        public int RequestCount { get; set; }
+        public double AverageResponseTime { get; set; }
+        public int ErrorCount { get; set; }
+        public double ErrorRate { get; set; }
+        public DateTime LastAccessed { get; set; }
+    }
 }

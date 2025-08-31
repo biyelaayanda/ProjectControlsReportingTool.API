@@ -291,6 +291,158 @@ namespace ProjectControlsReportingTool.API.Controllers
             }
         }
 
+        // Statistics and Analytics Endpoints (Phase 7.1)
+        [HttpGet("stats")]
+        public async Task<IActionResult> GetReportStatistics([FromQuery] StatisticsFilterDto filter)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var userRole = GetCurrentUserRole();
+                var userDepartment = GetCurrentUserDepartment();
+
+                var statistics = await _reportService.GetReportStatisticsAsync(filter, userId, userRole, userDepartment);
+                return Ok(statistics);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error retrieving statistics: {ex.Message}");
+            }
+        }
+
+        [HttpGet("stats/overview")]
+        public async Task<IActionResult> GetOverallStats([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
+        {
+            try
+            {
+                var stats = await _reportService.GetOverallStatsAsync(startDate, endDate);
+                return Ok(stats);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error retrieving overall stats: {ex.Message}");
+            }
+        }
+
+        [HttpGet("stats/departments")]
+        public async Task<IActionResult> GetDepartmentStats([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
+        {
+            try
+            {
+                var userRole = GetCurrentUserRole();
+                var userDepartment = GetCurrentUserDepartment();
+                
+                var stats = await _reportService.GetDepartmentStatsAsync(startDate, endDate);
+                
+                // Filter by user access level
+                if (userRole == UserRole.GeneralStaff)
+                {
+                    stats = stats.Where(s => s.Department == userDepartment);
+                }
+                
+                return Ok(stats);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error retrieving department stats: {ex.Message}");
+            }
+        }
+
+        [HttpGet("stats/trends")]
+        public async Task<IActionResult> GetTrendAnalysis(
+            [FromQuery] string period = "monthly", 
+            [FromQuery] int periodCount = 12, 
+            [FromQuery] Department? department = null)
+        {
+            try
+            {
+                var userRole = GetCurrentUserRole();
+                var userDepartment = GetCurrentUserDepartment();
+                
+                // Filter department access for general staff
+                if (userRole == UserRole.GeneralStaff)
+                {
+                    department = userDepartment;
+                }
+                
+                var trends = await _reportService.GetTrendAnalysisAsync(period, periodCount, department);
+                return Ok(trends);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error retrieving trend analysis: {ex.Message}");
+            }
+        }
+
+        [HttpGet("stats/performance")]
+        [Authorize(Roles = "LineManager,GM")]
+        public async Task<IActionResult> GetPerformanceMetrics([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
+        {
+            try
+            {
+                var metrics = await _reportService.GetPerformanceMetricsAsync(startDate, endDate);
+                return Ok(metrics);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error retrieving performance metrics: {ex.Message}");
+            }
+        }
+
+        [HttpGet("stats/user")]
+        public async Task<IActionResult> GetUserStats([FromQuery] Guid? userId, [FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
+        {
+            try
+            {
+                var currentUserId = GetCurrentUserId();
+                var currentUserRole = GetCurrentUserRole();
+                
+                // General staff can only see their own stats
+                if (currentUserRole == UserRole.GeneralStaff && userId.HasValue && userId.Value != currentUserId)
+                {
+                    return Forbid("You can only view your own statistics");
+                }
+                
+                var targetUserId = userId ?? currentUserId;
+                var stats = await _reportService.GetUserStatsAsync(targetUserId, startDate, endDate);
+                return Ok(stats);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error retrieving user stats: {ex.Message}");
+            }
+        }
+
+        [HttpGet("stats/system")]
+        [Authorize(Roles = "GM")]
+        public async Task<IActionResult> GetSystemPerformance()
+        {
+            try
+            {
+                var performance = await _reportService.GetSystemPerformanceAsync();
+                return Ok(performance);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error retrieving system performance: {ex.Message}");
+            }
+        }
+
+        [HttpGet("stats/endpoints")]
+        [Authorize(Roles = "GM")]
+        public async Task<IActionResult> GetEndpointMetrics([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
+        {
+            try
+            {
+                var metrics = await _reportService.GetEndpointMetricsAsync(startDate, endDate);
+                return Ok(metrics);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error retrieving endpoint metrics: {ex.Message}");
+            }
+        }
+
         private Guid GetCurrentUserId()
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;

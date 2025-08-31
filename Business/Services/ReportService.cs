@@ -778,5 +778,684 @@ namespace ProjectControlsReportingTool.API.Business.Services
             var user = _context.Users.FirstOrDefault(u => u.Id == userId);
             return user?.Department ?? Department.ProjectSupport;
         }
+
+        #region Statistics and Analytics Methods (Phase 7.1)
+
+        public async Task<ReportStatisticsDto> GetReportStatisticsAsync(StatisticsFilterDto filter, Guid userId, UserRole userRole, Department userDepartment)
+        {
+            try
+            {
+                var statistics = new ReportStatisticsDto();
+
+                // Get overall stats
+                statistics.OverallStats = await GetOverallStatsAsync(filter.StartDate, filter.EndDate);
+
+                // Get department stats (filtered by user role)
+                var departmentStats = await GetDepartmentStatsAsync(filter.StartDate, filter.EndDate);
+                if (userRole == UserRole.GeneralStaff)
+                {
+                    statistics.DepartmentStats = departmentStats.Where(d => d.Department == userDepartment);
+                }
+                else
+                {
+                    statistics.DepartmentStats = departmentStats;
+                }
+
+                // Get status stats
+                statistics.StatusStats = await GetStatusStatsAsync(filter.StartDate, filter.EndDate, userRole, userDepartment);
+
+                // Get priority stats
+                statistics.PriorityStats = await GetPriorityStatsAsync(filter.StartDate, filter.EndDate, userRole, userDepartment);
+
+                // Get performance metrics if requested
+                if (filter.IncludePerformanceMetrics)
+                {
+                    statistics.PerformanceMetrics = await GetPerformanceMetricsAsync(filter.StartDate, filter.EndDate);
+                }
+
+                // Get trend analysis if requested
+                if (filter.IncludeTrendAnalysis)
+                {
+                    var trendPeriod = filter.TrendPeriod ?? "monthly";
+                    var department = userRole == UserRole.GeneralStaff ? userDepartment : filter.Department;
+                    statistics.TrendAnalysis = await GetTrendAnalysisAsync(trendPeriod, 12, department);
+                }
+
+                // Get user-specific stats if requested
+                if (filter.IncludeUserStats)
+                {
+                    var targetUserId = filter.UserId ?? userId;
+                    statistics.UserSpecificStats = await GetUserStatsAsync(targetUserId, filter.StartDate, filter.EndDate);
+                }
+
+                return statistics;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting report statistics for user {UserId}", userId);
+                throw;
+            }
+        }
+
+        public async Task<OverallStatsDto> GetOverallStatsAsync(DateTime? startDate = null, DateTime? endDate = null)
+        {
+            try
+            {
+                var query = _context.Reports.AsQueryable();
+
+                if (startDate.HasValue)
+                    query = query.Where(r => r.CreatedDate >= startDate.Value);
+                if (endDate.HasValue)
+                    query = query.Where(r => r.CreatedDate <= endDate.Value);
+
+                var now = DateTime.UtcNow;
+                var currentMonthStart = new DateTime(now.Year, now.Month, 1);
+                var lastMonthStart = currentMonthStart.AddMonths(-1);
+
+                var stats = new OverallStatsDto
+                {
+                    TotalReports = await query.CountAsync(),
+                    TotalDrafts = await query.CountAsync(r => r.Status == ReportStatus.Draft),
+                    TotalSubmitted = await query.CountAsync(r => r.Status == ReportStatus.Submitted),
+                    TotalUnderReview = await query.CountAsync(r => r.Status == ReportStatus.ManagerReview || r.Status == ReportStatus.GMReview),
+                    TotalApproved = await query.CountAsync(r => r.Status == ReportStatus.Completed),
+                    TotalRejected = await query.CountAsync(r => r.Status == ReportStatus.ManagerRejected || r.Status == ReportStatus.GMRejected),
+                    TotalOverdue = await query.CountAsync(r => r.DueDate < now && r.Status != ReportStatus.Completed),
+                    TotalThisMonth = await query.CountAsync(r => r.CreatedDate >= currentMonthStart),
+                    TotalLastMonth = await query.CountAsync(r => r.CreatedDate >= lastMonthStart && r.CreatedDate < currentMonthStart),
+                    LastUpdated = DateTime.UtcNow
+                };
+
+                // Calculate month-over-month growth
+                if (stats.TotalLastMonth > 0)
+                {
+                    stats.MonthOverMonthGrowth = ((double)(stats.TotalThisMonth - stats.TotalLastMonth) / stats.TotalLastMonth) * 100;
+                }
+
+                return stats;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting overall stats");
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<DepartmentStatsDto>> GetDepartmentStatsAsync(DateTime? startDate = null, DateTime? endDate = null)
+        {
+            try
+            {
+                var query = _context.Reports.Include(r => r.Creator).AsQueryable();
+
+                if (startDate.HasValue)
+                    query = query.Where(r => r.CreatedDate >= startDate.Value);
+                if (endDate.HasValue)
+                    query = query.Where(r => r.CreatedDate <= endDate.Value);
+
+                var departmentStats = await query
+                    .GroupBy(r => r.Creator.Department)
+                    .Select(g => new DepartmentStatsDto
+                    {
+                        Department = g.Key,
+                        DepartmentName = g.Key.ToString(),
+                        TotalReports = g.Count(),
+                        PendingReports = g.Count(r => r.Status == ReportStatus.Submitted || r.Status == ReportStatus.ManagerReview || r.Status == ReportStatus.GMReview),
+                        ApprovedReports = g.Count(r => r.Status == ReportStatus.Completed),
+                        RejectedReports = g.Count(r => r.Status == ReportStatus.ManagerRejected || r.Status == ReportStatus.GMRejected),
+                        OverdueReports = g.Count(r => r.DueDate < DateTime.UtcNow && r.Status != ReportStatus.Completed),
+                        ApprovalRate = g.Count() > 0 ? (double)g.Count(r => r.Status == ReportStatus.Completed) / g.Count() * 100 : 0
+                    })
+                    .ToListAsync();
+
+                // Calculate additional metrics
+                foreach (var stat in departmentStats)
+                {
+                    // Calculate average completion time for approved reports
+                    var completedReports = await query
+                        .Where(r => r.Creator.Department == stat.Department && r.Status == ReportStatus.Completed && r.CompletedDate.HasValue)
+                        .Select(r => new { r.CreatedDate, ApprovedDate = r.CompletedDate })
+                        .ToListAsync();
+
+                    if (completedReports.Any())
+                    {
+                        stat.AverageCompletionTime = completedReports
+                            .Average(r => (r.ApprovedDate!.Value - r.CreatedDate).TotalDays);
+                    }
+
+                    // Get active users count
+                    stat.ActiveUsers = await _context.Users
+                        .CountAsync(u => u.Department == stat.Department && u.IsActive);
+                }
+
+                return departmentStats;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting department stats");
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<TrendDataDto>> GetTrendAnalysisAsync(string period = "monthly", int periodCount = 12, Department? department = null)
+        {
+            try
+            {
+                var trendData = new List<TrendDataDto>();
+                var now = DateTime.UtcNow;
+
+                for (int i = periodCount - 1; i >= 0; i--)
+                {
+                    DateTime startDate, endDate;
+                    
+                    switch (period.ToLower())
+                    {
+                        case "daily":
+                            startDate = now.Date.AddDays(-i);
+                            endDate = startDate.AddDays(1);
+                            break;
+                        case "weekly":
+                            startDate = now.Date.AddDays(-7 * i);
+                            endDate = startDate.AddDays(7);
+                            break;
+                        case "yearly":
+                            startDate = new DateTime(now.Year - i, 1, 1);
+                            endDate = startDate.AddYears(1);
+                            break;
+                        default: // monthly
+                            startDate = new DateTime(now.Year, now.Month, 1).AddMonths(-i);
+                            endDate = startDate.AddMonths(1);
+                            break;
+                    }
+
+                    var query = _context.Reports.Include(r => r.Creator).AsQueryable()
+                        .Where(r => r.CreatedDate >= startDate && r.CreatedDate < endDate);
+
+                    if (department.HasValue)
+                        query = query.Where(r => r.Creator.Department == department.Value);
+
+                    var periodData = new TrendDataDto
+                    {
+                        Date = startDate,
+                        Period = period,
+                        Department = department,
+                        ReportsCreated = await query.CountAsync(),
+                        ReportsApproved = await query.CountAsync(r => r.Status == ReportStatus.Completed),
+                        ReportsRejected = await query.CountAsync(r => r.Status == ReportStatus.ManagerRejected || r.Status == ReportStatus.GMRejected),
+                        ReportsSubmitted = await query.CountAsync(r => r.Status == ReportStatus.Submitted || r.Status == ReportStatus.ManagerReview || r.Status == ReportStatus.GMReview),
+                        ActiveUsers = await _context.Users.CountAsync(u => u.IsActive && (!department.HasValue || u.Department == department.Value))
+                    };
+
+                    // Calculate average processing time for completed reports in this period
+                    var completedReports = await query
+                        .Where(r => r.Status == ReportStatus.Completed && r.CompletedDate.HasValue)
+                        .Select(r => new { r.CreatedDate, ApprovedDate = r.CompletedDate })
+                        .ToListAsync();
+
+                    if (completedReports.Any())
+                    {
+                        periodData.AverageProcessingTime = completedReports
+                            .Average(r => (r.ApprovedDate!.Value - r.CreatedDate).TotalDays);
+                    }
+
+                    trendData.Add(periodData);
+                }
+
+                return trendData.OrderBy(t => t.Date);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting trend analysis");
+                throw;
+            }
+        }
+
+        public async Task<PerformanceMetricsDto> GetPerformanceMetricsAsync(DateTime? startDate = null, DateTime? endDate = null)
+        {
+            try
+            {
+                var now = DateTime.UtcNow;
+                var measurementStart = startDate ?? now.AddDays(-30);
+                var measurementEnd = endDate ?? now;
+
+                var query = _context.Reports.AsQueryable()
+                    .Where(r => r.CreatedDate >= measurementStart && r.CreatedDate <= measurementEnd);
+
+                var metrics = new PerformanceMetricsDto
+                {
+                    MeasurementPeriodStart = measurementStart,
+                    MeasurementPeriodEnd = measurementEnd,
+                    SystemUptime = 99.5, // This would come from monitoring system
+                    AverageResponseTime = 150, // This would come from monitoring system
+                    ErrorRate = 2, // errors per 1000 requests - from monitoring system
+                    UserSatisfactionScore = 4.2 // This would come from user feedback system
+                };
+
+                // Calculate average report creation time (time spent in draft status)
+                var draftReports = await query
+                    .Where(r => r.Status != ReportStatus.Draft && r.SubmittedDate.HasValue)
+                    .Select(r => new { r.CreatedDate, r.SubmittedDate })
+                    .ToListAsync();
+
+                if (draftReports.Any())
+                {
+                    metrics.AverageReportCreationTime = draftReports
+                        .Average(r => (r.SubmittedDate!.Value - r.CreatedDate).TotalMinutes);
+                }
+
+                // Calculate average approval time
+                var approvedReports = await query
+                    .Where(r => r.Status == ReportStatus.Completed && r.CompletedDate.HasValue && r.SubmittedDate.HasValue)
+                    .Select(r => new { r.SubmittedDate, ApprovedDate = r.CompletedDate })
+                    .ToListAsync();
+
+                if (approvedReports.Any())
+                {
+                    metrics.AverageApprovalTime = approvedReports
+                        .Average(r => (r.ApprovedDate!.Value - r.SubmittedDate!.Value).TotalDays);
+                }
+
+                // Calculate average review cycle time (submission to final decision)
+                var processedReports = await query
+                    .Where(r => (r.Status == ReportStatus.Completed || r.Status == ReportStatus.ManagerRejected || r.Status == ReportStatus.GMRejected) 
+                                && r.SubmittedDate.HasValue)
+                    .Select(r => new { 
+                        r.SubmittedDate, 
+                        FinalDate = r.CompletedDate ?? r.RejectedDate 
+                    })
+                    .Where(r => r.FinalDate.HasValue)
+                    .ToListAsync();
+
+                if (processedReports.Any())
+                {
+                    metrics.AverageReviewCycleTime = processedReports
+                        .Average(r => (r.FinalDate!.Value - r.SubmittedDate!.Value).TotalDays);
+                }
+
+                // These would typically come from application monitoring tools
+                metrics.TotalApiCalls = 15000; // Mock data - would be from monitoring
+                
+                return metrics;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting performance metrics");
+                throw;
+            }
+        }
+
+        public async Task<UserStatsDto> GetUserStatsAsync(Guid userId, DateTime? startDate = null, DateTime? endDate = null)
+        {
+            try
+            {
+                var user = await _userRepository.GetByIdAsync(userId);
+                if (user == null)
+                    throw new ArgumentException("User not found", nameof(userId));
+
+                var query = _context.Reports.AsQueryable();
+
+                if (startDate.HasValue)
+                    query = query.Where(r => r.CreatedDate >= startDate.Value);
+                if (endDate.HasValue)
+                    query = query.Where(r => r.CreatedDate <= endDate.Value);
+
+                var userReports = query.Where(r => r.CreatedBy == userId);
+                var now = DateTime.UtcNow;
+
+                var stats = new UserStatsDto
+                {
+                    UserId = userId,
+                    UserName = $"{user.FirstName} {user.LastName}",
+                    MyReportsCount = await userReports.CountAsync(),
+                    MyDraftsCount = await userReports.CountAsync(r => r.Status == ReportStatus.Draft),
+                    MyPendingApprovals = await userReports.CountAsync(r => r.Status == ReportStatus.Submitted || r.Status == ReportStatus.ManagerReview || r.Status == ReportStatus.GMReview),
+                    MyApprovedReports = await userReports.CountAsync(r => r.Status == ReportStatus.Completed),
+                    MyRejectedReports = await userReports.CountAsync(r => r.Status == ReportStatus.ManagerRejected || r.Status == ReportStatus.GMRejected),
+                    MyOverdueReports = await userReports.CountAsync(r => r.DueDate < now && r.Status != ReportStatus.Completed),
+                    LastLoginDate = user.LastLoginDate,
+                };
+
+                // Calculate last report created date
+                var lastReport = await userReports.OrderByDescending(r => r.CreatedDate).FirstOrDefaultAsync();
+                stats.LastReportCreated = lastReport?.CreatedDate ?? DateTime.MinValue;
+
+                // Calculate approval rate
+                var totalNonDraftReports = await userReports.CountAsync(r => r.Status != ReportStatus.Draft);
+                if (totalNonDraftReports > 0)
+                {
+                    stats.MyApprovalRate = (double)stats.MyApprovedReports / totalNonDraftReports * 100;
+                }
+
+                // Calculate average completion time
+                var completedReports = await userReports
+                    .Where(r => r.Status == ReportStatus.Completed && r.CompletedDate.HasValue)
+                    .Select(r => new { r.CreatedDate, ApprovedDate = r.CompletedDate })
+                    .ToListAsync();
+
+                if (completedReports.Any())
+                {
+                    stats.MyAverageCompletionTime = completedReports
+                        .Average(r => (r.ApprovedDate!.Value - r.CreatedDate).TotalDays);
+                }
+
+                // For managers and GMs, get additional stats
+                if (user.Role == UserRole.LineManager || user.Role == UserRole.GM)
+                {
+                    var reviewQuery = _context.Reports.AsQueryable();
+                    
+                    if (startDate.HasValue)
+                        reviewQuery = reviewQuery.Where(r => r.CreatedDate >= startDate.Value);
+                    if (endDate.HasValue)
+                        reviewQuery = reviewQuery.Where(r => r.CreatedDate <= endDate.Value);
+
+                    // Reports reviewed by this user (based on approval/rejection)
+                    // Reports reviewed by this user (based on completion/rejection tracking)
+                    // Note: This is simplified since we don't have ApprovedBy tracking
+                    stats.ReportsReviewedByMe = await reviewQuery
+                        .CountAsync(r => (r.Status == ReportStatus.Completed || r.Status == ReportStatus.ManagerRejected || r.Status == ReportStatus.GMRejected) 
+                                        && r.RejectedBy == userId);
+
+                    // For line managers, get team reports
+                    if (user.Role == UserRole.LineManager)
+                    {
+                        stats.MyTeamReportsCount = await query
+                            .Include(r => r.Creator)
+                            .CountAsync(r => r.Creator.Department == user.Department && r.CreatedBy != userId);
+                    }
+                    else if (user.Role == UserRole.GM)
+                    {
+                        // GMs can see all reports as "team reports"
+                        stats.MyTeamReportsCount = await query.CountAsync(r => r.CreatedBy != userId);
+                    }
+
+                    // Calculate average review time
+                    var reviewedReports = await reviewQuery
+                        .Where(r => r.RejectedBy == userId && r.SubmittedDate.HasValue)
+                        .Select(r => new { 
+                            r.SubmittedDate, 
+                            ReviewDate = r.CompletedDate ?? r.RejectedDate 
+                        })
+                        .Where(r => r.ReviewDate.HasValue)
+                        .ToListAsync();
+
+                    if (reviewedReports.Any())
+                    {
+                        stats.MyAverageReviewTime = reviewedReports
+                            .Average(r => (r.ReviewDate!.Value - r.SubmittedDate!.Value).TotalDays);
+                    }
+                }
+
+                return stats;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting user stats for user {UserId}", userId);
+                throw;
+            }
+        }
+
+        public Task<SystemPerformanceDto> GetSystemPerformanceAsync()
+        {
+            try
+            {
+                // This would typically integrate with monitoring tools like Application Insights, New Relic, etc.
+                // For now, providing mock data that would be realistic
+                
+                var performance = new SystemPerformanceDto
+                {
+                    Timestamp = DateTime.UtcNow,
+                    CpuUsage = 25.5, // percentage
+                    MemoryUsage = 68.2, // percentage
+                    DatabaseResponseTime = 45.3, // milliseconds
+                    ActiveConnections = 12,
+                    TotalRequests = 2547,
+                    ErrorCount = 3,
+                    ThroughputPerMinute = 85.2,
+                    EndpointMetrics = new List<EndpointMetricDto>
+                    {
+                        new EndpointMetricDto
+                        {
+                            Endpoint = "/api/reports",
+                            Method = "GET",
+                            RequestCount = 1250,
+                            AverageResponseTime = 180.5,
+                            ErrorCount = 1,
+                            ErrorRate = 0.08,
+                            LastAccessed = DateTime.UtcNow.AddMinutes(-2)
+                        },
+                        new EndpointMetricDto
+                        {
+                            Endpoint = "/api/reports",
+                            Method = "POST",
+                            RequestCount = 345,
+                            AverageResponseTime = 420.3,
+                            ErrorCount = 2,
+                            ErrorRate = 0.58,
+                            LastAccessed = DateTime.UtcNow.AddMinutes(-1)
+                        },
+                        new EndpointMetricDto
+                        {
+                            Endpoint = "/api/auth/login",
+                            Method = "POST",
+                            RequestCount = 89,
+                            AverageResponseTime = 95.2,
+                            ErrorCount = 0,
+                            ErrorRate = 0,
+                            LastAccessed = DateTime.UtcNow.AddMinutes(-5)
+                        }
+                    }
+                };
+
+                return Task.FromResult(performance);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting system performance");
+                throw;
+            }
+        }
+
+        public Task<IEnumerable<EndpointMetricDto>> GetEndpointMetricsAsync(DateTime? startDate = null, DateTime? endDate = null)
+        {
+            try
+            {
+                // This would typically come from application monitoring/logging
+                // For now, providing mock data that would be realistic
+                
+                var metrics = new List<EndpointMetricDto>
+                {
+                    new EndpointMetricDto
+                    {
+                        Endpoint = "/api/reports",
+                        Method = "GET",
+                        RequestCount = 5420,
+                        AverageResponseTime = 165.8,
+                        ErrorCount = 12,
+                        ErrorRate = 0.22,
+                        LastAccessed = DateTime.UtcNow.AddMinutes(-1)
+                    },
+                    new EndpointMetricDto
+                    {
+                        Endpoint = "/api/reports",
+                        Method = "POST",
+                        RequestCount = 1230,
+                        AverageResponseTime = 385.6,
+                        ErrorCount = 8,
+                        ErrorRate = 0.65,
+                        LastAccessed = DateTime.UtcNow.AddMinutes(-3)
+                    },
+                    new EndpointMetricDto
+                    {
+                        Endpoint = "/api/reports/stats",
+                        Method = "GET",
+                        RequestCount = 245,
+                        AverageResponseTime = 95.2,
+                        ErrorCount = 1,
+                        ErrorRate = 0.41,
+                        LastAccessed = DateTime.UtcNow.AddMinutes(-10)
+                    },
+                    new EndpointMetricDto
+                    {
+                        Endpoint = "/api/auth/login",
+                        Method = "POST",
+                        RequestCount = 456,
+                        AverageResponseTime = 120.5,
+                        ErrorCount = 3,
+                        ErrorRate = 0.66,
+                        LastAccessed = DateTime.UtcNow.AddMinutes(-5)
+                    },
+                    new EndpointMetricDto
+                    {
+                        Endpoint = "/api/users",
+                        Method = "GET",
+                        RequestCount = 890,
+                        AverageResponseTime = 78.3,
+                        ErrorCount = 2,
+                        ErrorRate = 0.22,
+                        LastAccessed = DateTime.UtcNow.AddMinutes(-8)
+                    }
+                };
+
+                return Task.FromResult(metrics.OrderByDescending(m => m.RequestCount).AsEnumerable());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting endpoint metrics");
+                throw;
+            }
+        }
+
+        private async Task<IEnumerable<StatusStatsDto>> GetStatusStatsAsync(DateTime? startDate, DateTime? endDate, UserRole userRole, Department userDepartment)
+        {
+            try
+            {
+                var query = _context.Reports.Include(r => r.Creator).AsQueryable();
+
+                if (startDate.HasValue)
+                    query = query.Where(r => r.CreatedDate >= startDate.Value);
+                if (endDate.HasValue)
+                    query = query.Where(r => r.CreatedDate <= endDate.Value);
+
+                // Filter by user role and department
+                if (userRole == UserRole.GeneralStaff)
+                {
+                    query = query.Where(r => r.Creator.Department == userDepartment);
+                }
+
+                var totalReports = await query.CountAsync();
+                if (totalReports == 0)
+                    return new List<StatusStatsDto>();
+
+                var statusStats = await query
+                    .GroupBy(r => r.Status)
+                    .Select(g => new StatusStatsDto
+                    {
+                        Status = g.Key,
+                        StatusName = g.Key.ToString(),
+                        Count = g.Count(),
+                        Percentage = (double)g.Count() / totalReports * 100
+                    })
+                    .ToListAsync();
+
+                // Calculate average time in status (mock calculation for now)
+                foreach (var stat in statusStats)
+                {
+                    switch (stat.Status)
+                    {
+                        case ReportStatus.Draft:
+                            stat.AverageTimeInStatus = 2.5; // days
+                            stat.TrendDirection = 0; // stable
+                            break;
+                        case ReportStatus.Submitted:
+                            stat.AverageTimeInStatus = 1.2;
+                            stat.TrendDirection = -1; // decreasing (good)
+                            break;
+                        case ReportStatus.ManagerReview:
+                            stat.AverageTimeInStatus = 3.8;
+                            stat.TrendDirection = 1; // increasing (attention needed)
+                            break;
+                        case ReportStatus.GMReview:
+                            stat.AverageTimeInStatus = 2.5;
+                            stat.TrendDirection = 1; // increasing (attention needed)
+                            break;
+                        case ReportStatus.Completed:
+                            stat.AverageTimeInStatus = 0; // final status
+                            stat.TrendDirection = 1; // increasing (good)
+                            break;
+                        default:
+                            stat.AverageTimeInStatus = 0;
+                            stat.TrendDirection = 0;
+                            break;
+                    }
+                }
+
+                return statusStats.OrderBy(s => s.Status);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting status stats");
+                throw;
+            }
+        }
+
+        private async Task<IEnumerable<PriorityStatsDto>> GetPriorityStatsAsync(DateTime? startDate, DateTime? endDate, UserRole userRole, Department userDepartment)
+        {
+            try
+            {
+                var query = _context.Reports.Include(r => r.Creator).AsQueryable();
+
+                if (startDate.HasValue)
+                    query = query.Where(r => r.CreatedDate >= startDate.Value);
+                if (endDate.HasValue)
+                    query = query.Where(r => r.CreatedDate <= endDate.Value);
+
+                // Filter by user role and department
+                if (userRole == UserRole.GeneralStaff)
+                {
+                    query = query.Where(r => r.Creator.Department == userDepartment);
+                }
+
+                var totalReports = await query.CountAsync();
+                if (totalReports == 0)
+                    return new List<PriorityStatsDto>();
+
+                var now = DateTime.UtcNow;
+                var priorityStats = await query
+                    .GroupBy(r => r.Priority)
+                    .Select(g => new PriorityStatsDto
+                    {
+                        Priority = g.Key,
+                        Count = g.Count(),
+                        Percentage = (double)g.Count() / totalReports * 100,
+                        OverdueCount = g.Count(r => r.DueDate < now && r.Status != ReportStatus.Completed)
+                    })
+                    .ToListAsync();
+
+                // Calculate average completion time for each priority
+                foreach (var stat in priorityStats)
+                {
+                    var completedReports = await query
+                        .Where(r => r.Priority == stat.Priority 
+                                   && r.Status == ReportStatus.Completed 
+                                   && r.CompletedDate.HasValue)
+                        .Select(r => new { r.CreatedDate, ApprovedDate = r.CompletedDate })
+                        .ToListAsync();
+
+                    if (completedReports.Any())
+                    {
+                        stat.AverageCompletionTime = completedReports
+                            .Average(r => (r.ApprovedDate!.Value - r.CreatedDate).TotalDays);
+                    }
+                }
+
+                return priorityStats.OrderBy(p => p.Priority);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting priority stats");
+                throw;
+            }
+        }
+
+        #endregion
     }
 }

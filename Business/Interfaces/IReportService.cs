@@ -21,5 +21,15 @@ namespace ProjectControlsReportingTool.API.Business.Interfaces
         Task<ReportAttachment?> GetAttachmentAsync(Guid reportId, Guid attachmentId, Guid userId);
         Task<ServiceResultDto> UploadApprovalDocumentsAsync(Guid reportId, IFormFileCollection files, Guid userId, UserRole userRole, string? description = null);
         Task<IEnumerable<ReportAttachmentDto>> GetReportAttachmentsByStageAsync(Guid reportId, ApprovalStage? stage, Guid userId, UserRole userRole);
+
+        // Statistics and Analytics
+        Task<ReportStatisticsDto> GetReportStatisticsAsync(StatisticsFilterDto filter, Guid userId, UserRole userRole, Department userDepartment);
+        Task<OverallStatsDto> GetOverallStatsAsync(DateTime? startDate = null, DateTime? endDate = null);
+        Task<IEnumerable<DepartmentStatsDto>> GetDepartmentStatsAsync(DateTime? startDate = null, DateTime? endDate = null);
+        Task<IEnumerable<TrendDataDto>> GetTrendAnalysisAsync(string period = "monthly", int periodCount = 12, Department? department = null);
+        Task<PerformanceMetricsDto> GetPerformanceMetricsAsync(DateTime? startDate = null, DateTime? endDate = null);
+        Task<UserStatsDto> GetUserStatsAsync(Guid userId, DateTime? startDate = null, DateTime? endDate = null);
+        Task<SystemPerformanceDto> GetSystemPerformanceAsync();
+        Task<IEnumerable<EndpointMetricDto>> GetEndpointMetricsAsync(DateTime? startDate = null, DateTime? endDate = null);
     }
 }
