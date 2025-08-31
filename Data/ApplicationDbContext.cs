@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ProjectControlsReportingTool.API.Models.Entities;
 using ProjectControlsReportingTool.API.Models.Enums;
+using ProjectControlsReportingTool.API.Data.Entities;
 
 namespace ProjectControlsReportingTool.API.Data
 {
@@ -39,6 +40,13 @@ namespace ProjectControlsReportingTool.API.Data
         public DbSet<SmsMessage> SmsMessages { get; set; }
         public DbSet<SmsTemplate> SmsTemplates { get; set; }
         public DbSet<SmsStatistic> SmsStatistics { get; set; }
+        
+        // Teams integration management
+        public DbSet<TeamsWebhookConfig> TeamsWebhookConfigs { get; set; }
+        public DbSet<TeamsMessage> TeamsMessages { get; set; }
+        public DbSet<TeamsNotificationTemplate> TeamsNotificationTemplates { get; set; }
+        public DbSet<TeamsIntegrationStat> TeamsIntegrationStats { get; set; }
+        public DbSet<TeamsDeliveryFailure> TeamsDeliveryFailures { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

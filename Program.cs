@@ -75,6 +75,9 @@ void SetupDependencyInjection(WebApplicationBuilder webApplicationBuilder)
     // Phase 11.3: SMS Integration
     webApplicationBuilder.Services.AddScoped<ISmsService, SmsService>();
     
+    // Phase 11.4: Teams Integration
+    webApplicationBuilder.Services.AddScoped<ITeamsIntegrationService, TeamsIntegrationService>();
+    
     // RazorLight for email template rendering
     webApplicationBuilder.Services.AddSingleton<IRazorLightEngine>(provider =>
     {

@@ -2,6 +2,8 @@ using AutoMapper;
 using ProjectControlsReportingTool.API.Models.DTOs;
 using ProjectControlsReportingTool.API.Models.Entities;
 using ProjectControlsReportingTool.API.Models.Enums;
+using ProjectControlsReportingTool.API.Business.Models;
+using ProjectControlsReportingTool.API.Data.Entities;
 
 namespace ProjectControlsReportingTool.API.Business.Mappings
 {
@@ -117,6 +119,29 @@ namespace ProjectControlsReportingTool.API.Business.Mappings
                 .ForMember(dest => dest.UsageCount, opt => opt.MapFrom(src => 0))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.UtcNow))
                 .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => DateTime.UtcNow));
+
+            // Teams integration mappings
+            CreateMap<TeamsWebhookConfig, TeamsWebhookConfigDto>()
+                .ForMember(dest => dest.DefaultFormat, opt => opt.MapFrom(src => Enum.Parse<TeamsMessageFormat>(src.DefaultFormat)))
+                .ForMember(dest => dest.EnabledNotifications, opt => opt.Ignore())
+                .ForMember(dest => dest.CustomSettings, opt => opt.Ignore());
+
+            CreateMap<TeamsWebhookConfigDto, TeamsWebhookConfig>()
+                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => Guid.NewGuid()))
+                .ForMember(dest => dest.DefaultFormat, opt => opt.MapFrom(src => src.DefaultFormat.ToString()))
+                .ForMember(dest => dest.EnabledNotifications, opt => opt.Ignore())
+                .ForMember(dest => dest.CustomSettings, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.UtcNow));
+
+            CreateMap<TeamsNotificationTemplate, TeamsNotificationTemplateDto>()
+                .ForMember(dest => dest.DefaultActions, opt => opt.Ignore())
+                .ForMember(dest => dest.DefaultFacts, opt => opt.Ignore());
+
+            CreateMap<CreateTeamsTemplateDto, TeamsNotificationTemplate>()
+                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => Guid.NewGuid()))
+                .ForMember(dest => dest.DefaultActionsJson, opt => opt.Ignore())
+                .ForMember(dest => dest.DefaultFactsJson, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.UtcNow));
         }
 
         private static string GetDepartmentName(Department department)
