@@ -21,6 +21,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 builder.Services.Configure<FileStorageSettings>(builder.Configuration.GetSection("FileStorage"));
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
 builder.Services.Configure<PushNotificationOptions>(builder.Configuration.GetSection("PushNotificationSettings"));
 builder.Services.Configure<SmsOptions>(builder.Configuration.GetSection("SmsSettings"));
 
@@ -57,6 +58,12 @@ void SetupDependencyInjection(WebApplicationBuilder webApplicationBuilder)
     
     // Email service
     webApplicationBuilder.Services.AddScoped<IEmailService, EmailService>();
+    
+    // Phase 7: Email Notification Service
+    webApplicationBuilder.Services.AddScoped<IEmailNotificationService, EmailNotificationService>();
+    
+    // Phase 7: Workflow Notification Service
+    webApplicationBuilder.Services.AddScoped<IWorkflowNotificationService, WorkflowNotificationService>();
     
     // Real-time notification service
     webApplicationBuilder.Services.AddScoped<IRealTimeNotificationService, RealTimeNotificationService>();

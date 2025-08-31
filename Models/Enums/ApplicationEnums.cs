@@ -75,7 +75,15 @@ namespace ProjectControlsReportingTool.API.Models.Enums
         StatusChange = 12,
         BulkUpdate = 13,
         MaintenanceNotice = 14,
-        SecurityAlert = 15
+        SecurityAlert = 15,
+        SystemMaintenance = 16,
+        SystemUpdate = 17,
+        ReportSubmission = 18,
+        ReportApproval = 19,
+        ReportRejection = 20,
+        Reminder = 21,
+        Alert = 22,
+        ReviewRequired = 23
     }
 
     public enum NotificationPriority

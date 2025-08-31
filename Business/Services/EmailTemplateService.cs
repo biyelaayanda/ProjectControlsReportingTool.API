@@ -92,7 +92,7 @@ namespace ProjectControlsReportingTool.API.Business.Services
                     throw new InvalidOperationException($"Template validation failed: {string.Join(", ", validationResult.ValidationErrors)}");
                 }
 
-                var template = _mapper.Map<EmailTemplate>(createDto);
+                var template = _mapper.Map<ProjectControlsReportingTool.API.Models.Entities.EmailTemplate>(createDto);
                 template.CreatedBy = userId;
                 template.UpdatedBy = userId;
                 template.CreatedAt = DateTime.UtcNow;
@@ -547,7 +547,7 @@ namespace ProjectControlsReportingTool.API.Business.Services
         {
             try
             {
-                List<EmailTemplate> templatesToExport;
+                List<ProjectControlsReportingTool.API.Models.Entities.EmailTemplate> templatesToExport;
                 
                 if (templateIds != null && templateIds.Any())
                 {
@@ -689,7 +689,7 @@ namespace ProjectControlsReportingTool.API.Business.Services
 
         #region Private Helper Methods
 
-        private async Task<RenderedEmailTemplateDto> RenderTemplateInternal(EmailTemplate template, Dictionary<string, object> data)
+        private async Task<RenderedEmailTemplateDto> RenderTemplateInternal(ProjectControlsReportingTool.API.Models.Entities.EmailTemplate template, Dictionary<string, object> data)
         {
             var result = new RenderedEmailTemplateDto
             {
@@ -806,11 +806,11 @@ namespace ProjectControlsReportingTool.API.Business.Services
             return System.Text.Json.JsonSerializer.Serialize(variables.ToList());
         }
 
-        private List<EmailTemplate> GetDefaultSystemTemplates(Guid userId)
+        private List<ProjectControlsReportingTool.API.Models.Entities.EmailTemplate> GetDefaultSystemTemplates(Guid userId)
         {
-            return new List<EmailTemplate>
+            return new List<ProjectControlsReportingTool.API.Models.Entities.EmailTemplate>
             {
-                new EmailTemplate
+                new ProjectControlsReportingTool.API.Models.Entities.EmailTemplate
                 {
                     Id = Guid.NewGuid(),
                     Name = "Welcome Email",
@@ -834,7 +834,7 @@ namespace ProjectControlsReportingTool.API.Business.Services
                     CreatedBy = userId,
                     UpdatedBy = userId
                 },
-                new EmailTemplate
+                new ProjectControlsReportingTool.API.Models.Entities.EmailTemplate
                 {
                     Id = Guid.NewGuid(),
                     Name = "Report Status Notification",
@@ -862,7 +862,7 @@ namespace ProjectControlsReportingTool.API.Business.Services
                     CreatedBy = userId,
                     UpdatedBy = userId
                 },
-                new EmailTemplate
+                new ProjectControlsReportingTool.API.Models.Entities.EmailTemplate
                 {
                     Id = Guid.NewGuid(),
                     Name = "Password Reset",
