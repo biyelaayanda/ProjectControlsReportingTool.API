@@ -46,10 +46,25 @@ namespace ProjectControlsReportingTool.API.Models.Entities
         [StringLength(100)]
         public string? JobTitle { get; set; }
 
+        // SuperAdmin tracking fields
+        public bool RequirePasswordChange { get; set; } = false;
+        public Guid? CreatedBy { get; set; }
+        public DateTime? ModifiedAt { get; set; }
+        public Guid? ModifiedBy { get; set; }
+
         // Navigation properties
         public virtual ICollection<Report> CreatedReports { get; set; } = new List<Report>();
         public virtual ICollection<ReportSignature> Signatures { get; set; } = new List<ReportSignature>();
         public virtual ICollection<AuditLog> AuditLogs { get; set; } = new List<AuditLog>();
+        
+        // SuperAdmin navigation properties
+        public virtual ICollection<UserManagementAudit> CreatedAudits { get; set; } = new List<UserManagementAudit>();
+        public virtual ICollection<UserManagementAudit> TargetedAudits { get; set; } = new List<UserManagementAudit>();
+        public virtual ICollection<SuperAdminSession> SuperAdminSessions { get; set; } = new List<SuperAdminSession>();
+        
+        // Foreign key navigation for SuperAdmin tracking
+        public virtual User? CreatedByUser { get; set; }
+        public virtual User? ModifiedByUser { get; set; }
 
         // Computed properties
         [NotMapped]

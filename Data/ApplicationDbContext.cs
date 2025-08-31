@@ -54,6 +54,11 @@ namespace ProjectControlsReportingTool.API.Data
         public DbSet<SlackNotificationTemplate> SlackNotificationTemplates { get; set; }
         public DbSet<SlackIntegrationStat> SlackIntegrationStats { get; set; }
         public DbSet<SlackDeliveryFailure> SlackDeliveryFailures { get; set; }
+        
+        // SuperAdmin management
+        public DbSet<UserManagementAudit> UserManagementAudits { get; set; }
+        public DbSet<SuperAdminSession> SuperAdminSessions { get; set; }
+        public DbSet<AuditReportCache> AuditReportCaches { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -379,8 +384,90 @@ namespace ProjectControlsReportingTool.API.Data
                 entity.HasIndex(e => new { e.Date, e.Provider }).IsUnique();
             });
 
+            // Configure SuperAdmin entities
+            ConfigureSuperAdminEntities(modelBuilder);
+
             // Seed initial data
             SeedData(modelBuilder);
+        }
+
+        private static void ConfigureSuperAdminEntities(ModelBuilder modelBuilder)
+        {
+            // Configure User entity SuperAdmin relationships
+            modelBuilder.Entity<User>(entity =>
+            {
+                // Self-referencing foreign keys for CreatedBy/ModifiedBy
+                entity.HasOne(u => u.CreatedByUser)
+                    .WithMany()
+                    .HasForeignKey(u => u.CreatedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(u => u.ModifiedByUser)
+                    .WithMany()
+                    .HasForeignKey(u => u.ModifiedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                // Configure audit relationships
+                entity.HasMany(u => u.CreatedAudits)
+                    .WithOne(a => a.AdminUser)
+                    .HasForeignKey(a => a.AdminUserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasMany(u => u.TargetedAudits)
+                    .WithOne(a => a.TargetUser)
+                    .HasForeignKey(a => a.TargetUserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                // Configure session relationships
+                entity.HasMany(u => u.SuperAdminSessions)
+                    .WithOne(s => s.User)
+                    .HasForeignKey(s => s.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // Configure UserManagementAudit entity
+            modelBuilder.Entity<UserManagementAudit>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Action).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Timestamp).HasDefaultValueSql("GETUTCDATE()");
+                entity.Property(e => e.IPAddress).HasMaxLength(45); // IPv6 support
+                entity.Property(e => e.Reason).HasMaxLength(500);
+                
+                entity.HasIndex(e => e.AdminUserId);
+                entity.HasIndex(e => e.TargetUserId);
+                entity.HasIndex(e => e.Timestamp);
+                entity.HasIndex(e => e.Action);
+            });
+
+            // Configure SuperAdminSession entity
+            modelBuilder.Entity<SuperAdminSession>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.StartTime).HasDefaultValueSql("GETUTCDATE()");
+                entity.Property(e => e.IPAddress).HasMaxLength(45);
+                entity.Property(e => e.UserAgent).HasMaxLength(500);
+                
+                entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => e.StartTime);
+                entity.HasIndex(e => e.IsActive);
+            });
+
+            // Configure AuditReportCache entity
+            modelBuilder.Entity<AuditReportCache>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.ReportType).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Parameters).IsRequired();
+                entity.Property(e => e.CachedData).IsRequired();
+                entity.Property(e => e.GeneratedAt).HasDefaultValueSql("GETUTCDATE()");
+                entity.Property(e => e.ExpiresAt).IsRequired();
+                
+                entity.HasIndex(e => e.ReportType);
+                entity.HasIndex(e => e.ExpiresAt);
+                entity.HasIndex(e => new { e.ReportType, e.ParametersHash }).IsUnique();
+            });
+        }
         }
 
         private static void SeedData(ModelBuilder modelBuilder)

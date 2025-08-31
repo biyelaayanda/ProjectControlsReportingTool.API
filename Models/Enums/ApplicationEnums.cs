@@ -2,6 +2,7 @@ namespace ProjectControlsReportingTool.API.Models.Enums
 {
     public enum UserRole
     {
+        SuperAdmin = 0,        // 🆕 System administration only
         GeneralStaff = 1,
         LineManager = 2,
         GM = 3
