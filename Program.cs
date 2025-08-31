@@ -36,6 +36,9 @@ void SetupDependencyInjection(WebApplicationBuilder webApplicationBuilder)
     webApplicationBuilder.Services.AddScoped<IAuthService, AuthService>();
     webApplicationBuilder.Services.AddScoped<IReportTemplateService, ReportTemplateService>();
     webApplicationBuilder.Services.AddScoped<IExportService, ExportService>();
+    
+    // Analytics data access service
+    webApplicationBuilder.Services.AddScoped<IAnalyticsDataAccessService, AnalyticsDataAccessService>();
 }
 
 // Add services to the container

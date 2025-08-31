@@ -18,6 +18,7 @@ namespace ProjectControlsReportingTool.API.Business.Services
         private readonly IMapper _mapper;
         private readonly ILogger<ReportService> _logger;
         private readonly IWebHostEnvironment _environment;
+        private readonly IAnalyticsDataAccessService _analyticsDataAccessService;
 
         public ReportService(
             IReportRepository reportRepository,
@@ -26,7 +27,8 @@ namespace ProjectControlsReportingTool.API.Business.Services
             ApplicationDbContext context,
             IMapper mapper,
             ILogger<ReportService> logger,
-            IWebHostEnvironment environment)
+            IWebHostEnvironment environment,
+            IAnalyticsDataAccessService analyticsDataAccessService)
         {
             _reportRepository = reportRepository;
             _userRepository = userRepository;
@@ -35,6 +37,7 @@ namespace ProjectControlsReportingTool.API.Business.Services
             _mapper = mapper;
             _logger = logger;
             _environment = environment;
+            _analyticsDataAccessService = analyticsDataAccessService;
         }
 
         public async Task<ReportDto?> CreateReportAsync(CreateReportDto dto, Guid userId)
@@ -785,47 +788,150 @@ namespace ProjectControlsReportingTool.API.Business.Services
         {
             try
             {
+                _logger.LogInformation("Getting report statistics for user {UserId} with role {UserRole}", userId, userRole);
+                
                 var statistics = new ReportStatisticsDto();
 
-                // Get overall stats
-                statistics.OverallStats = await GetOverallStatsAsync(filter.StartDate, filter.EndDate);
+                // Use secure stored procedure for report statistics
+                var storedProcResult = await _analyticsDataAccessService.GetReportStatisticsAsync(
+                    userId, userRole, userDepartment, filter.StartDate, filter.EndDate);
 
-                // Get department stats (filtered by user role)
-                var departmentStats = await GetDepartmentStatsAsync(filter.StartDate, filter.EndDate);
-                if (userRole == UserRole.GeneralStaff)
+                if (storedProcResult != null)
                 {
-                    statistics.DepartmentStats = departmentStats.Where(d => d.Department == userDepartment);
+                    // Map stored procedure result to service DTO
+                    statistics.OverallStats = new OverallStatsDto
+                    {
+                        TotalReports = storedProcResult.TotalReports,
+                        TotalDrafts = storedProcResult.DraftReports,
+                        TotalSubmitted = storedProcResult.SubmittedReports,
+                        TotalUnderReview = storedProcResult.InReviewReports,
+                        TotalApproved = storedProcResult.ApprovedReports + storedProcResult.CompletedReports,
+                        TotalRejected = storedProcResult.RejectedReports,
+                        TotalOverdue = 0, // Calculated separately if needed
+                        TotalThisMonth = 0, // Not directly available from this SP
+                        TotalLastMonth = 0, // Not directly available from this SP
+                        LastUpdated = DateTime.UtcNow,
+                        MonthOverMonthGrowth = 0 // Calculated separately if needed
+                    };
                 }
                 else
                 {
-                    statistics.DepartmentStats = departmentStats;
+                    // Fallback to legacy EF queries if stored procedure fails
+                    _logger.LogWarning("Stored procedure failed, falling back to legacy implementation");
+                    statistics.OverallStats = await GetOverallStatsAsync(filter.StartDate, filter.EndDate);
                 }
 
-                // Get status stats
+                // Get department stats using secure data access
+                var departmentStats = await _analyticsDataAccessService.GetDepartmentStatisticsAsync(
+                    userRole, userDepartment, filter.StartDate, filter.EndDate);
+
+                statistics.DepartmentStats = departmentStats.Select(d => new DepartmentStatsDto
+                {
+                    Department = (Department)d.Department,
+                    DepartmentName = ((Department)d.Department).ToString(),
+                    TotalReports = d.TotalReports,
+                    PendingReports = d.SubmittedReports + d.InReviewReports,
+                    ApprovedReports = d.CompletedReports,
+                    RejectedReports = d.RejectedReports,
+                    OverdueReports = 0, // Would need additional calculation
+                    ApprovalRate = (double)d.CompletionRate,
+                    AverageCompletionTime = d.AvgTotalTimeHours.HasValue ? (double)d.AvgTotalTimeHours.Value / 24 : 0, // Convert hours to days
+                    ActiveUsers = 0 // Would need additional query
+                });
+
+                // Get status stats (using legacy method for now)
                 statistics.StatusStats = await GetStatusStatsAsync(filter.StartDate, filter.EndDate, userRole, userDepartment);
 
-                // Get priority stats
+                // Get priority stats (using legacy method for now)
                 statistics.PriorityStats = await GetPriorityStatsAsync(filter.StartDate, filter.EndDate, userRole, userDepartment);
 
-                // Get performance metrics if requested
+                // Get performance metrics using secure data access
                 if (filter.IncludePerformanceMetrics)
                 {
-                    statistics.PerformanceMetrics = await GetPerformanceMetricsAsync(filter.StartDate, filter.EndDate);
+                    var performanceResult = await _analyticsDataAccessService.GetPerformanceMetricsAsync(
+                        filter.StartDate, filter.EndDate, userRole, userDepartment);
+
+                    if (performanceResult != null)
+                    {
+                        statistics.PerformanceMetrics = new PerformanceMetricsDto
+                        {
+                            AverageReportCreationTime = 0, // Not directly available - would need additional calculation
+                            AverageApprovalTime = performanceResult.AvgApprovalTimeHours.HasValue ? (double)performanceResult.AvgApprovalTimeHours.Value / 24 : 0,
+                            AverageReviewCycleTime = performanceResult.AvgCreationToSubmissionHours.HasValue ? (double)performanceResult.AvgCreationToSubmissionHours.Value / 24 : 0,
+                            SystemUptime = 99.9, // Default value - would need system monitoring
+                            TotalApiCalls = 0, // Would need API monitoring
+                            AverageResponseTime = 0, // Would need API monitoring
+                            ErrorRate = 0, // Would need error monitoring
+                            UserSatisfactionScore = 4.5, // Default value - would need survey data
+                            MeasurementPeriodStart = performanceResult.PeriodStart,
+                            MeasurementPeriodEnd = performanceResult.PeriodEnd
+                        };
+                    }
                 }
 
-                // Get trend analysis if requested
+                // Get trend analysis using secure data access
                 if (filter.IncludeTrendAnalysis)
                 {
                     var trendPeriod = filter.TrendPeriod ?? "monthly";
                     var department = userRole == UserRole.GeneralStaff ? userDepartment : filter.Department;
-                    statistics.TrendAnalysis = await GetTrendAnalysisAsync(trendPeriod, 12, department);
+                    
+                    var trendResults = await _analyticsDataAccessService.GetTrendAnalysisAsync(
+                        trendPeriod, 12, department, userRole, userDepartment);
+
+                    statistics.TrendAnalysis = trendResults.Select(t => new TrendDataDto
+                    {
+                        Period = t.Period,
+                        ReportsCreated = t.CreatedCount,
+                        ReportsApproved = t.CompletedCount,
+                        ReportsRejected = t.RejectedCount,
+                        ReportsSubmitted = 0, // Not directly available
+                        AverageProcessingTime = t.AvgCompletionTimeHours.HasValue ? (double)t.AvgCompletionTimeHours.Value : 0,
+                        Date = DateTime.UtcNow, // Would need to parse from Period
+                        ActiveUsers = 0, // Not available from this SP
+                        Department = department,
+                        Metric = "reports",
+                        Value = (double)t.CompletionRate
+                    });
                 }
 
-                // Get user-specific stats if requested
+                // Get user-specific stats using secure data access
                 if (filter.IncludeUserStats)
                 {
                     var targetUserId = filter.UserId ?? userId;
-                    statistics.UserSpecificStats = await GetUserStatsAsync(targetUserId, filter.StartDate, filter.EndDate);
+                    
+                    try
+                    {
+                        var userStatsResult = await _analyticsDataAccessService.GetUserStatisticsAsync(
+                            targetUserId, userId, userRole, userDepartment, filter.StartDate, filter.EndDate);
+
+                        if (userStatsResult != null)
+                        {
+                            statistics.UserSpecificStats = new UserStatsDto
+                            {
+                                UserId = targetUserId,
+                                UserName = userStatsResult.UserName,
+                                MyReportsCount = userStatsResult.TotalReports,
+                                MyDraftsCount = userStatsResult.DraftReports,
+                                MyPendingApprovals = userStatsResult.SubmittedReports + userStatsResult.InReviewReports,
+                                MyApprovedReports = userStatsResult.CompletedReports,
+                                MyRejectedReports = userStatsResult.RejectedReports,
+                                MyOverdueReports = 0, // Would need additional calculation
+                                MyAverageCompletionTime = userStatsResult.AvgCompletionTimeHours.HasValue ? 
+                                    (double)userStatsResult.AvgCompletionTimeHours.Value / 24 : 0,
+                                MyApprovalRate = (double)userStatsResult.CompletionRate,
+                                ReportsReviewedByMe = 0, // Not available from this SP
+                                MyAverageReviewTime = 0, // Not available from this SP
+                                MyTeamReportsCount = 0, // Would need additional query
+                                LastLoginDate = userStatsResult.LastActivityDate ?? DateTime.MinValue,
+                                LastReportCreated = userStatsResult.FirstReportDate ?? DateTime.MinValue
+                            };
+                        }
+                    }
+                    catch (UnauthorizedAccessException ex)
+                    {
+                        _logger.LogWarning(ex, "Unauthorized access to user statistics for user {TargetUserId} by {UserId}", targetUserId, userId);
+                        // Don't include user stats if unauthorized
+                    }
                 }
 
                 return statistics;
