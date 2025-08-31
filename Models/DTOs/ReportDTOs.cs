@@ -516,4 +516,137 @@ namespace ProjectControlsReportingTool.API.Models.DTOs
         public double ErrorRate { get; set; }
         public DateTime LastAccessed { get; set; }
     }
+
+    // Export DTOs for Phase 7.2
+    public class ExportRequestDto
+    {
+        [Required]
+        public ExportFormat Format { get; set; }
+        
+        public ExportType Type { get; set; } = ExportType.Reports;
+        
+        public ReportFilterDto? ReportFilter { get; set; }
+        
+        public StatisticsFilterDto? StatisticsFilter { get; set; }
+        
+        public IEnumerable<Guid>? SpecificReportIds { get; set; }
+        
+        [StringLength(200)]
+        public string? FileName { get; set; }
+        
+        public ExportTemplateDto? Template { get; set; }
+        
+        public bool IncludeAttachments { get; set; } = false;
+        
+        public bool IncludeSignatures { get; set; } = false;
+        
+        public bool IncludeAuditTrail { get; set; } = false;
+        
+        [StringLength(500)]
+        public string? CustomHeader { get; set; }
+        
+        [StringLength(500)]
+        public string? CustomFooter { get; set; }
+    }
+
+    public class ExportTemplateDto
+    {
+        public string? LogoUrl { get; set; }
+        public string? CompanyName { get; set; } = "Project Controls Reporting Tool";
+        public string? ReportTitle { get; set; }
+        public bool IncludeCoverPage { get; set; } = true;
+        public bool IncludeTableOfContents { get; set; } = false;
+        public bool IncludePageNumbers { get; set; } = true;
+        public string? PageOrientation { get; set; } = "Portrait"; // Portrait or Landscape
+        public string? PageSize { get; set; } = "A4"; // A4, Letter, etc.
+        public Dictionary<string, string>? CustomStyles { get; set; }
+    }
+
+    public class ExportResultDto
+    {
+        public bool Success { get; set; }
+        public string? ErrorMessage { get; set; }
+        public string? FileName { get; set; }
+        public string? ContentType { get; set; }
+        public long FileSizeBytes { get; set; }
+        public DateTime GeneratedDate { get; set; } = DateTime.UtcNow;
+        public ExportFormat Format { get; set; }
+        public ExportType Type { get; set; }
+        public int RecordCount { get; set; }
+        public string? DownloadUrl { get; set; }
+        public TimeSpan ProcessingTime { get; set; }
+        public Guid ExportId { get; set; } = Guid.NewGuid();
+    }
+
+    public class BulkExportRequestDto
+    {
+        [Required]
+        public IEnumerable<ExportRequestDto> ExportRequests { get; set; } = new List<ExportRequestDto>();
+        
+        [StringLength(200)]
+        public string? ZipFileName { get; set; }
+        
+        public bool CreateZipFile { get; set; } = true;
+    }
+
+    public class BulkExportResultDto
+    {
+        public bool Success { get; set; }
+        public string? ErrorMessage { get; set; }
+        public IEnumerable<ExportResultDto> Results { get; set; } = new List<ExportResultDto>();
+        public string? ZipFileName { get; set; }
+        public string? ZipDownloadUrl { get; set; }
+        public long TotalSizeBytes { get; set; }
+        public int TotalFiles { get; set; }
+        public DateTime GeneratedDate { get; set; } = DateTime.UtcNow;
+        public TimeSpan TotalProcessingTime { get; set; }
+    }
+
+    public class ExportHistoryDto
+    {
+        public Guid ExportId { get; set; }
+        public string FileName { get; set; } = string.Empty;
+        public ExportFormat Format { get; set; }
+        public ExportType Type { get; set; }
+        public DateTime RequestedDate { get; set; }
+        public DateTime? CompletedDate { get; set; }
+        public ExportStatus Status { get; set; }
+        public string? ErrorMessage { get; set; }
+        public long? FileSizeBytes { get; set; }
+        public int RecordCount { get; set; }
+        public string RequestedBy { get; set; } = string.Empty;
+        public TimeSpan? ProcessingTime { get; set; }
+        public string? DownloadUrl { get; set; }
+        public DateTime? ExpiryDate { get; set; }
+    }
+
+    // Export enums
+    public enum ExportFormat
+    {
+        PDF = 1,
+        Excel = 2,
+        Word = 3,
+        CSV = 4,
+        JSON = 5,
+        XML = 6
+    }
+
+    public enum ExportType
+    {
+        Reports = 1,
+        Statistics = 2,
+        Users = 3,
+        AuditLogs = 4,
+        Templates = 5,
+        Custom = 6
+    }
+
+    public enum ExportStatus
+    {
+        Pending = 1,
+        Processing = 2,
+        Completed = 3,
+        Failed = 4,
+        Expired = 5
+    }
 }
