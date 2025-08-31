@@ -4,6 +4,7 @@ using ProjectControlsReportingTool.API.Models.Entities;
 using ProjectControlsReportingTool.API.Models.Enums;
 using ProjectControlsReportingTool.API.Business.Models;
 using ProjectControlsReportingTool.API.Data.Entities;
+using System.Text.Json;
 
 namespace ProjectControlsReportingTool.API.Business.Mappings
 {
@@ -142,6 +143,13 @@ namespace ProjectControlsReportingTool.API.Business.Mappings
                 .ForMember(dest => dest.DefaultActionsJson, opt => opt.Ignore())
                 .ForMember(dest => dest.DefaultFactsJson, opt => opt.Ignore())
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.UtcNow));
+
+            // Slack Integration Mappings
+            CreateMap<SlackWebhookConfig, SlackWebhookConfigDto>();
+            CreateMap<SlackMessage, SlackMessageResponseDto>();
+            CreateMap<SlackNotificationTemplate, SlackNotificationTemplateDto>();
+            CreateMap<SlackIntegrationStat, SlackIntegrationStatsDto>();
+            CreateMap<SlackDeliveryFailure, SlackDeliveryFailureInfo>();
         }
 
         private static string GetDepartmentName(Department department)

@@ -78,6 +78,8 @@ void SetupDependencyInjection(WebApplicationBuilder webApplicationBuilder)
     // Phase 11.4: Teams Integration
     webApplicationBuilder.Services.AddScoped<ITeamsIntegrationService, TeamsIntegrationService>();
     
+    // Phase 11.4: Slack Integration Foundation (DTOs and entities created - service implementation pending)
+    
     // RazorLight for email template rendering
     webApplicationBuilder.Services.AddSingleton<IRazorLightEngine>(provider =>
     {

@@ -48,6 +48,13 @@ namespace ProjectControlsReportingTool.API.Data
         public DbSet<TeamsIntegrationStat> TeamsIntegrationStats { get; set; }
         public DbSet<TeamsDeliveryFailure> TeamsDeliveryFailures { get; set; }
 
+        // Slack integration management
+        public DbSet<SlackWebhookConfig> SlackWebhookConfigs { get; set; }
+        public DbSet<SlackMessage> SlackMessages { get; set; }
+        public DbSet<SlackNotificationTemplate> SlackNotificationTemplates { get; set; }
+        public DbSet<SlackIntegrationStat> SlackIntegrationStats { get; set; }
+        public DbSet<SlackDeliveryFailure> SlackDeliveryFailures { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
