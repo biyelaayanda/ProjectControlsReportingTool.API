@@ -12,9 +12,11 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="MailKit" Version="4.13.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.8" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.8" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.4" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.2.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="4.14.0">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
@@ -30,6 +32,7 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="Moq" Version="4.20.70" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="RazorLight" Version="2.3.1" />
     <PackageReference Include="SonarAnalyzer.CSharp" Version="10.15.0.120848">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>

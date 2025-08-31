@@ -17,11 +17,17 @@ namespace ProjectControlsReportingTool.API.Business.AppSettings
 
     public class EmailSettings
     {
-        public string SmtpHost { get; set; } = string.Empty;
+        public string SmtpServer { get; set; } = string.Empty;
         public int SmtpPort { get; set; } = 587;
         public string Username { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
+        public string SenderEmail { get; set; } = string.Empty;
+        public string SenderName { get; set; } = string.Empty;
         public bool EnableSsl { get; set; } = true;
+        public bool EnableTls { get; set; } = true;
+        public int TimeoutSeconds { get; set; } = 30;
+        public string DefaultFromAddress { get; set; } = string.Empty;
+        public string DefaultFromName { get; set; } = string.Empty;
     }
 
     public class ApplicationSettings

@@ -10,6 +10,7 @@ using ProjectControlsReportingTool.API.Repositories.Implementations;
 using ProjectControlsReportingTool.API.Business.Interfaces;
 using ProjectControlsReportingTool.API.Business.Services;
 using ProjectControlsReportingTool.API.Middleware;
+using ProjectControlsReportingTool.API.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -48,10 +49,19 @@ void SetupDependencyInjection(WebApplicationBuilder webApplicationBuilder)
     
     // Analytics data access service
     webApplicationBuilder.Services.AddScoped<IAnalyticsDataAccessService, AnalyticsDataAccessService>();
+    
+    // Email service
+    webApplicationBuilder.Services.AddScoped<IEmailService, EmailService>();
+    
+    // Real-time notification service
+    webApplicationBuilder.Services.AddScoped<IRealTimeNotificationService, RealTimeNotificationService>();
 }
 
 // Add services to the container
 builder.Services.AddControllers();
+
+// Add SignalR for real-time notifications
+builder.Services.AddSignalR();
 
 // Add HttpClient for webhook service
 builder.Services.AddHttpClient();
@@ -92,7 +102,7 @@ builder.Services.AddCors(options =>
         policy.WithOrigins("http://localhost:4200", "https://localhost:4200") // Angular dev server
               .AllowAnyHeader()
               .AllowAnyMethod()
-              .AllowCredentials();
+              .AllowCredentials(); // Required for SignalR
     });
 });
 
@@ -160,6 +170,9 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Map SignalR Hub
+app.MapHub<NotificationHub>("/hubs/notifications");
 
 // Ensure database is created
 using (var scope = app.Services.CreateScope())
