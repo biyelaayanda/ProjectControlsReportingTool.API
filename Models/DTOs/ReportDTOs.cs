@@ -649,4 +649,358 @@ namespace ProjectControlsReportingTool.API.Models.DTOs
         Failed = 4,
         Expired = 5
     }
+
+    //Advanced Analytics DTOs
+    public class TimeSeriesAnalysisDto
+    {
+        public DateTime PeriodStart { get; set; }
+        public DateTime PeriodEnd { get; set; }
+        public string Period { get; set; } = string.Empty; // "daily", "weekly", "monthly", "quarterly", "yearly"
+        public List<TimeSeriesDataPointDto> DataPoints { get; set; } = new();
+        public TimeSeriesMetricsDto Metrics { get; set; } = new();
+        public List<TimeSeriesTrendDto> Trends { get; set; } = new();
+        public ComparisonDataDto? ComparisonData { get; set; }
+    }
+
+    public class TimeSeriesDataPointDto
+    {
+        public DateTime Timestamp { get; set; }
+        public string Label { get; set; } = string.Empty;
+        public double Value { get; set; }
+        public int Count { get; set; }
+        public Dictionary<string, object> Metadata { get; set; } = new();
+    }
+
+    public class TimeSeriesMetricsDto
+    {
+        public double Average { get; set; }
+        public double Minimum { get; set; }
+        public double Maximum { get; set; }
+        public double StandardDeviation { get; set; }
+        public double GrowthRate { get; set; }
+        public string TrendDirection { get; set; } = string.Empty; // "Increasing", "Decreasing", "Stable"
+        public double Volatility { get; set; }
+    }
+
+    public class TimeSeriesTrendDto
+    {
+        public string TrendType { get; set; } = string.Empty; // "Linear", "Exponential", "Seasonal"
+        public double Coefficient { get; set; }
+        public double RSquared { get; set; }
+        public string Description { get; set; } = string.Empty;
+        public DateTime? ProjectedDate { get; set; }
+        public double? ProjectedValue { get; set; }
+    }
+
+    public class ComparisonDataDto
+    {
+        public DateTime PreviousPeriodStart { get; set; }
+        public DateTime PreviousPeriodEnd { get; set; }
+        public double PreviousPeriodValue { get; set; }
+        public double PercentageChange { get; set; }
+        public string ChangeDirection { get; set; } = string.Empty; // "Improved", "Declined", "NoChange"
+        public bool IsSignificant { get; set; }
+    }
+
+    public class PerformanceDashboardDto
+    {
+        public OverallPerformanceDto Overall { get; set; } = new();
+        public List<DepartmentPerformanceDto> Departments { get; set; } = new();
+        public List<UserPerformanceDto> TopPerformers { get; set; } = new();
+        public List<AlertDto> Alerts { get; set; } = new();
+        public List<KpiDto> KeyPerformanceIndicators { get; set; } = new();
+        public WorkflowEfficiencyDto WorkflowEfficiency { get; set; } = new();
+        public QualityMetricsDto QualityMetrics { get; set; } = new();
+        public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
+    }
+
+    public class OverallPerformanceDto
+    {
+        public int TotalReports { get; set; }
+        public int CompletedReports { get; set; }
+        public int PendingReports { get; set; }
+        public double CompletionRate { get; set; }
+        public double AverageProcessingTime { get; set; }
+        public double OnTimeDeliveryRate { get; set; }
+        public int ActiveUsers { get; set; }
+        public double SystemUptime { get; set; }
+    }
+
+    public class DepartmentPerformanceDto
+    {
+        public Department Department { get; set; }
+        public string DepartmentName { get; set; } = string.Empty;
+        public int ReportCount { get; set; }
+        public double CompletionRate { get; set; }
+        public double AverageProcessingTime { get; set; }
+        public double QualityScore { get; set; }
+        public int ActiveUsers { get; set; }
+        public string PerformanceGrade { get; set; } = string.Empty; // "A", "B", "C", "D", "F"
+        public List<string> Strengths { get; set; } = new();
+        public List<string> ImprovementAreas { get; set; } = new();
+    }
+
+    public class UserPerformanceDto
+    {
+        public Guid UserId { get; set; }
+        public string UserName { get; set; } = string.Empty;
+        public Department Department { get; set; }
+        public int ReportsCreated { get; set; }
+        public int ReportsCompleted { get; set; }
+        public double AverageQualityScore { get; set; }
+        public double AverageCompletionTime { get; set; }
+        public double OnTimeDeliveryRate { get; set; }
+        public int Rank { get; set; }
+        public string PerformanceLevel { get; set; } = string.Empty; // "Excellent", "Good", "Average", "NeedsImprovement"
+    }
+
+    public class AlertDto
+    {
+        public string AlertType { get; set; } = string.Empty; // "Warning", "Critical", "Information"
+        public string Title { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+        public string Severity { get; set; } = string.Empty; // "High", "Medium", "Low"
+        public DateTime CreatedAt { get; set; }
+        public string? ActionRequired { get; set; }
+        public Dictionary<string, object> Data { get; set; } = new();
+    }
+
+    public class KpiDto
+    {
+        public string Name { get; set; } = string.Empty;
+        public double CurrentValue { get; set; }
+        public double TargetValue { get; set; }
+        public double PreviousValue { get; set; }
+        public string Unit { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty; // "OnTrack", "AtRisk", "BehindTarget"
+        public double PercentageOfTarget { get; set; }
+        public double ChangeFromPrevious { get; set; }
+        public string TrendDirection { get; set; } = string.Empty;
+    }
+
+    public class WorkflowEfficiencyDto
+    {
+        public double AverageDraftTime { get; set; }
+        public double AverageReviewTime { get; set; }
+        public double AverageApprovalTime { get; set; }
+        public double TotalCycleTime { get; set; }
+        public double BottleneckScore { get; set; }
+        public string MajorBottleneck { get; set; } = string.Empty;
+        public List<WorkflowStageDto> StageMetrics { get; set; } = new();
+    }
+
+    public class WorkflowStageDto
+    {
+        public string StageName { get; set; } = string.Empty;
+        public double AverageTime { get; set; }
+        public int ReportsInStage { get; set; }
+        public double EfficiencyScore { get; set; }
+        public List<string> ImprovementSuggestions { get; set; } = new();
+    }
+
+    public class QualityMetricsDto
+    {
+        public double OverallQualityScore { get; set; }
+        public double RejectionRate { get; set; }
+        public double ResubmissionRate { get; set; }
+        public double FirstPassSuccessRate { get; set; }
+        public List<QualityIssueDto> CommonIssues { get; set; } = new();
+        public List<QualityTrendDto> QualityTrends { get; set; } = new();
+    }
+
+    public class QualityIssueDto
+    {
+        public string IssueType { get; set; } = string.Empty;
+        public int Frequency { get; set; }
+        public double ImpactScore { get; set; }
+        public string Description { get; set; } = string.Empty;
+        public List<string> RecommendedActions { get; set; } = new();
+    }
+
+    public class QualityTrendDto
+    {
+        public DateTime Period { get; set; }
+        public double QualityScore { get; set; }
+        public double RejectionRate { get; set; }
+        public string TrendDirection { get; set; } = string.Empty;
+    }
+
+    public class ComparativeAnalysisDto
+    {
+        public string AnalysisType { get; set; } = string.Empty; // "Department", "User", "TimePeriod"
+        public DateTime PeriodStart { get; set; }
+        public DateTime PeriodEnd { get; set; }
+        public List<ComparisonEntityDto> Entities { get; set; } = new();
+        public ComparisonSummaryDto Summary { get; set; } = new();
+        public List<InsightDto> Insights { get; set; } = new();
+        public List<RecommendationDto> Recommendations { get; set; } = new();
+    }
+
+    public class ComparisonEntityDto
+    {
+        public string EntityId { get; set; } = string.Empty;
+        public string EntityName { get; set; } = string.Empty;
+        public string EntityType { get; set; } = string.Empty;
+        public Dictionary<string, double> Metrics { get; set; } = new();
+        public int Rank { get; set; }
+        public string PerformanceCategory { get; set; } = string.Empty;
+        public double OverallScore { get; set; }
+    }
+
+    public class ComparisonSummaryDto
+    {
+        public ComparisonEntityDto TopPerformer { get; set; } = new();
+        public ComparisonEntityDto LowestPerformer { get; set; } = new();
+        public double AveragePerformance { get; set; }
+        public double PerformanceRange { get; set; }
+        public string OverallTrend { get; set; } = string.Empty;
+        public int TotalEntitiesCompared { get; set; }
+    }
+
+    public class InsightDto
+    {
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Category { get; set; } = string.Empty; // "Performance", "Quality", "Efficiency", "Trend"
+        public string Severity { get; set; } = string.Empty; // "High", "Medium", "Low"
+        public double Confidence { get; set; }
+        public Dictionary<string, object> SupportingData { get; set; } = new();
+    }
+
+    public class RecommendationDto
+    {
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Category { get; set; } = string.Empty;
+        public string Priority { get; set; } = string.Empty; // "High", "Medium", "Low"
+        public string Impact { get; set; } = string.Empty; // "High", "Medium", "Low"
+        public string Effort { get; set; } = string.Empty; // "High", "Medium", "Low"
+        public List<string> Actions { get; set; } = new();
+        public string? ExpectedOutcome { get; set; }
+    }
+
+    public class PredictiveAnalyticsDto
+    {
+        public string ModelType { get; set; } = string.Empty; // "ReportVolume", "CompletionTime", "QualityScore"
+        public DateTime PredictionDate { get; set; }
+        public string PredictionPeriod { get; set; } = string.Empty; // "NextWeek", "NextMonth", "NextQuarter"
+        public List<PredictionDto> Predictions { get; set; } = new();
+        public ModelMetricsDto ModelMetrics { get; set; } = new();
+        public List<ScenarioDto> Scenarios { get; set; } = new();
+        public List<RiskFactorDto> RiskFactors { get; set; } = new();
+    }
+
+    public class PredictionDto
+    {
+        public DateTime Date { get; set; }
+        public double PredictedValue { get; set; }
+        public double ConfidenceInterval { get; set; }
+        public double LowerBound { get; set; }
+        public double UpperBound { get; set; }
+        public string Category { get; set; } = string.Empty;
+        public Dictionary<string, object> Factors { get; set; } = new();
+    }
+
+    public class ModelMetricsDto
+    {
+        public double Accuracy { get; set; }
+        public double MeanAbsoluteError { get; set; }
+        public double RSquared { get; set; }
+        public DateTime LastTrainedDate { get; set; }
+        public int TrainingDataPoints { get; set; }
+        public string ModelVersion { get; set; } = string.Empty;
+    }
+
+    public class ScenarioDto
+    {
+        public string ScenarioName { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public double Probability { get; set; }
+        public List<PredictionDto> Predictions { get; set; } = new();
+        public string Impact { get; set; } = string.Empty;
+    }
+
+    public class RiskFactorDto
+    {
+        public string FactorName { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public double RiskLevel { get; set; }
+        public string Impact { get; set; } = string.Empty;
+        public string Likelihood { get; set; } = string.Empty;
+        public List<string> MitigationStrategies { get; set; } = new();
+    }
+
+    public class CustomReportGeneratorDto
+    {
+        public Guid ReportId { get; set; }
+        public string ReportName { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string ReportType { get; set; } = string.Empty; // "Analytics", "Performance", "Comparison", "Prediction"
+        public List<ReportParameterDto> Parameters { get; set; } = new();
+        public List<ReportSectionDto> Sections { get; set; } = new();
+        public ReportFormattingDto Formatting { get; set; } = new();
+        public ReportScheduleDto? Schedule { get; set; }
+        public List<string> Recipients { get; set; } = new();
+        public DateTime CreatedDate { get; set; }
+        public string CreatedBy { get; set; } = string.Empty;
+    }
+
+    public class ReportParameterDto
+    {
+        public string ParameterName { get; set; } = string.Empty;
+        public string ParameterType { get; set; } = string.Empty; // "Date", "Department", "User", "Number", "Boolean"
+        public object DefaultValue { get; set; } = new();
+        public bool IsRequired { get; set; }
+        public string? ValidationRule { get; set; }
+        public List<object>? PossibleValues { get; set; }
+    }
+
+    public class ReportSectionDto
+    {
+        public string SectionName { get; set; } = string.Empty;
+        public string SectionType { get; set; } = string.Empty; // "Chart", "Table", "Summary", "Text"
+        public string DataSource { get; set; } = string.Empty;
+        public Dictionary<string, object> Configuration { get; set; } = new();
+        public int Order { get; set; }
+        public bool IsVisible { get; set; } = true;
+    }
+
+    public class ReportFormattingDto
+    {
+        public string Theme { get; set; } = string.Empty;
+        public string ColorScheme { get; set; } = string.Empty;
+        public string FontFamily { get; set; } = string.Empty;
+        public bool IncludeHeader { get; set; } = true;
+        public bool IncludeFooter { get; set; } = true;
+        public bool IncludePageNumbers { get; set; } = true;
+        public string PageOrientation { get; set; } = "Portrait";
+        public Dictionary<string, object> CustomStyles { get; set; } = new();
+    }
+
+    public class ReportScheduleDto
+    {
+        public string Frequency { get; set; } = string.Empty; // "Daily", "Weekly", "Monthly", "Quarterly"
+        public DateTime StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+        public string TimeOfDay { get; set; } = string.Empty;
+        public List<int>? DaysOfWeek { get; set; }
+        public int? DayOfMonth { get; set; }
+        public bool IsActive { get; set; } = true;
+    }
+
+    public class AdvancedAnalyticsFilterDto
+    {
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+        public List<Department>? Departments { get; set; }
+        public List<Guid>? UserIds { get; set; }
+        public List<ReportStatus>? Statuses { get; set; }
+        public string? AnalysisType { get; set; }
+        public string? GroupBy { get; set; }
+        public string? TimeGranularity { get; set; } // "daily", "weekly", "monthly"
+        public bool IncludePredictions { get; set; } = false;
+        public bool IncludeComparisons { get; set; } = false;
+        public int? TopN { get; set; }
+        public Dictionary<string, object>? CustomFilters { get; set; }
+    }
 }

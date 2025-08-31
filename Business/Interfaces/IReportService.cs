@@ -29,6 +29,16 @@ namespace ProjectControlsReportingTool.API.Business.Interfaces
         Task<IEnumerable<TrendDataDto>> GetTrendAnalysisAsync(string period = "monthly", int periodCount = 12, Department? department = null);
         Task<PerformanceMetricsDto> GetPerformanceMetricsAsync(DateTime? startDate = null, DateTime? endDate = null);
         Task<UserStatsDto> GetUserStatsAsync(Guid userId, DateTime? startDate = null, DateTime? endDate = null);
+
+        // Phase 7.3 Advanced Analytics
+        Task<TimeSeriesAnalysisDto> GetTimeSeriesAnalysisAsync(AdvancedAnalyticsFilterDto filter, Guid userId, UserRole userRole);
+        Task<PerformanceDashboardDto> GetPerformanceDashboardAsync(AdvancedAnalyticsFilterDto filter, Guid userId, UserRole userRole);
+        Task<ComparativeAnalysisDto> GetComparativeAnalysisAsync(AdvancedAnalyticsFilterDto filter, Guid userId, UserRole userRole);
+        Task<PredictiveAnalyticsDto> GetPredictiveAnalyticsAsync(AdvancedAnalyticsFilterDto filter, Guid userId, UserRole userRole);
+        Task<CustomReportGeneratorDto> GenerateCustomReportAsync(CustomReportGeneratorDto reportConfig, Guid userId, UserRole userRole);
+        Task<IEnumerable<CustomReportGeneratorDto>> GetCustomReportTemplatesAsync(Guid userId, UserRole userRole);
+        Task<ServiceResultDto> SaveCustomReportTemplateAsync(CustomReportGeneratorDto reportTemplate, Guid userId);
+        Task<ServiceResultDto> DeleteCustomReportTemplateAsync(Guid templateId, Guid userId, UserRole userRole);
         Task<SystemPerformanceDto> GetSystemPerformanceAsync();
         Task<IEnumerable<EndpointMetricDto>> GetEndpointMetricsAsync(DateTime? startDate = null, DateTime? endDate = null);
     }
